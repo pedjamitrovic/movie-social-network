@@ -7,7 +7,8 @@ using MovieSocialNetworkApi.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using AutoMapper;
+using MovieSocialNetworkApi.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace MovieSocialNetworkApi
 {
@@ -32,7 +33,7 @@ namespace MovieSocialNetworkApi
 
             // configure jwt authentication
             var appSettings = appSettingsSection.Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(appSettings.JwtSecret);
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -51,8 +52,11 @@ namespace MovieSocialNetworkApi
                 };
             });
 
+            services.AddDbContext<MovieSocialNetworkDbContext>(options => options.UseSqlServer("name=ConnectionStrings:MovieSocialNetworkDb"));
+
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IPostService, PostService>();
             services.AddAutoMapper(typeof(Startup));
         }
 

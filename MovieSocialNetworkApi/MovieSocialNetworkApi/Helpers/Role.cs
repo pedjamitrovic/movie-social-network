@@ -1,5 +1,4 @@
-﻿
-namespace MovieSocialNetworkApi.Entities
+﻿namespace MovieSocialNetworkApi.Helpers
 {
     public static class Role
     {

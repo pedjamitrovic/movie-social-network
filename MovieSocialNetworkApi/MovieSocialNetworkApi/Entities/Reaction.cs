@@ -8,7 +8,7 @@ namespace MovieSocialNetworkApi.Entities
         [Key]
         public long Id { get; set; }
         public long Value { get; set; }
-        public AbstractUser Owner { get; set; }
-        public AbstractContent Content { get; set; }
+        public virtual AbstractUser Owner { get; set; }
+        public virtual AbstractContent Content { get; set; }
     }
 }

@@ -6,6 +6,6 @@ namespace MovieSocialNetworkApi.Entities
 {
     public class Comment: AbstractContent
     {
-        public Post Post { get; set; }
+        public virtual Post Post { get; set; }
     }
 }

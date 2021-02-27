@@ -6,8 +6,8 @@ namespace MovieSocialNetworkApi.Entities
 {
     public class Post: AbstractContent
     {
-        public ICollection<Comment> Comments { get; set; }
-        public Group OwnerGroup { get; set; }
+        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual Group OwnerGroup { get; set; }
         // Media
     }
 }

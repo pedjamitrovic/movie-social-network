@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
+using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
 
@@ -26,10 +27,9 @@ namespace MovieSocialNetworkApi.Controllers
             try
             {
                 var user = _userService.Authenticate(command);
-
                 return Ok(user);
             }
-            catch (UserNotFoundException e)
+            catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
             }

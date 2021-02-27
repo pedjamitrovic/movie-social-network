@@ -8,6 +8,7 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
@@ -18,6 +19,7 @@ namespace MovieSocialNetworkApi.Services
     public class UserService : IUserService
     {
         private readonly AppSettings _appSettings;
+        private readonly MovieSocialNetworkDbContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
 
@@ -27,11 +29,16 @@ namespace MovieSocialNetworkApi.Services
             new User { Id = 2, Username = "user", PasswordHash = "user", Role = Role.User }
         };
 
-        public UserService(IOptions<AppSettings> appSettings, IMapper mapper, ILogger<UserService> logger)
-        {
+        public UserService(
+            IOptions<AppSettings> appSettings,
+            IMapper mapper, 
+            ILogger<UserService> logger, 
+            MovieSocialNetworkDbContext context
+        ) {
             _appSettings = appSettings.Value;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
         }
 
         public AuthenticatedUser Authenticate(AuthenticateCommand command)
@@ -42,12 +49,12 @@ namespace MovieSocialNetworkApi.Services
 
                 var user = _users.SingleOrDefault(x => x.Username == command.Username && x.PasswordHash == command.Password);
 
-                if (user == null) throw new UserNotFoundException("Invalid username or password");
+                if (user == null) throw new BusinessException("Invalid username or password");
 
                 var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
 
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {

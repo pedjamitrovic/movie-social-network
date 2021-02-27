@@ -9,8 +9,8 @@ namespace MovieSocialNetworkApi.Entities
         public long Id { get; set; }
         public string Role { get; set; }
         public string Description { get; set; }
-        public ICollection<Post> Posts { get; set; }
-        public ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<Post> Posts { get; set; }
+        public virtual ICollection<Comment> Comments { get; set; }
         // profile image, cover image
     }
 }

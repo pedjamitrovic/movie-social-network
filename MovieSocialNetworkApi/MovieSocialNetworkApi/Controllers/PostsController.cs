@@ -21,7 +21,7 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] Paging paging, [FromQuery] Sorting sorting, [FromQuery] string q)
+        public async Task<IActionResult> GetList([FromQuery] Paging paging, [FromQuery] Sorting sorting, [FromQuery] string q)
         {
             try
             {
@@ -36,6 +36,16 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest();
             }
+        }
+
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            var user = _postService.GetById(id);
+
+            if (user == null) return NotFound();
+
+            return Ok(user);
         }
     }
 }

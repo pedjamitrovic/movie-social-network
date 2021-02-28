@@ -85,5 +85,30 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
+
+        public Task<Post> GetById(int id)
+        {
+             return _context.Posts.FirstOrDefaultAsync(e => e.Id == id);
+        }
+
+        Task<Post> IPostService.Create(CreatePostCommand command)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<bool> IPostService.React(CreateReactionCommand command)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<bool> IPostService.Report(ReportCommand command)
+        {
+            throw new NotImplementedException();
+        }
+
+        Task<bool> IPostService.Delete(int id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

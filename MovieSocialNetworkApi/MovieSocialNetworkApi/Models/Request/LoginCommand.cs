@@ -2,7 +2,7 @@
 
 namespace MovieSocialNetworkApi.Models
 {
-    public class AuthenticateCommand
+    public class LoginCommand
     {
         [Required]
         public string Username { get; set; }

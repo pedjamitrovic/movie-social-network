@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MovieSocialNetworkApi.Migrations
 {
-    public partial class CreateMovieSocialNetworkDB : Migration
+    public partial class InitialMigration : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -15,11 +15,12 @@ namespace MovieSocialNetworkApi.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Role = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    BannedUntil = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Discriminator = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Subtitle = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Username = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -65,6 +66,30 @@ namespace MovieSocialNetworkApi.Migrations
                     table.ForeignKey(
                         name: "FK_AbstractContents_AbstractUsers_Post_CreatorId",
                         column: x => x.Post_CreatorId,
+                        principalTable: "AbstractUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Relations",
+                columns: table => new
+                {
+                    FollowerId = table.Column<long>(type: "bigint", nullable: false),
+                    FollowingId = table.Column<long>(type: "bigint", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Relations", x => new { x.FollowingId, x.FollowerId });
+                    table.ForeignKey(
+                        name: "FK_Relations_AbstractUsers_FollowerId",
+                        column: x => x.FollowerId,
+                        principalTable: "AbstractUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Relations_AbstractUsers_FollowingId",
+                        column: x => x.FollowingId,
                         principalTable: "AbstractUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -126,12 +151,20 @@ namespace MovieSocialNetworkApi.Migrations
                 name: "IX_Reactions_OwnerId",
                 table: "Reactions",
                 column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Relations_FollowerId",
+                table: "Relations",
+                column: "FollowerId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "Reactions");
+
+            migrationBuilder.DropTable(
+                name: "Relations");
 
             migrationBuilder.DropTable(
                 name: "AbstractContents");

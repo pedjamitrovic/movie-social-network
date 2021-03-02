@@ -5,6 +5,7 @@ using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Controllers
 {
@@ -21,12 +22,12 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("authenticate")]
-        public IActionResult Authenticate([FromBody] AuthenticateCommand command)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginCommand command)
         {
             try
             {
-                var user = _userService.Authenticate(command);
+                var user = await _userService.Login(command);
                 return Ok(user);
             }
             catch (BusinessException e)
@@ -39,12 +40,103 @@ namespace MovieSocialNetworkApi.Controllers
             }
         }
 
+        [AllowAnonymous]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterCommand command)
+        {
+            try
+            {
+                var user = await _userService.Register(command);
+                return Ok(user);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("{id}/follow")]
+        public async Task<IActionResult> Follow(int id)
+        {
+            try
+            {
+                await _userService.Follow(id);
+                return Ok();
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPut("{id}/unfollow")]
+        public async Task<IActionResult> Unfollow(int id)
+        {
+            try
+            {
+                await _userService.Unfollow(id);
+                return Ok();
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpGet("{id}/followers")]
+        public async Task<IActionResult> GetFollowers(int id)
+        {
+            try
+            {
+                var followers = await _userService.GetFollowers(id);
+                return Ok(followers);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpGet("{id}/following")]
+        public async Task<IActionResult> GetFollowing(int id)
+        {
+            try
+            {
+                var following = await _userService.GetFollowing(id);
+                return Ok(following);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+
         [Authorize(Roles = Role.Admin)]
         [HttpGet]
         public IActionResult GetAll()
         {
-            var users = _userService.GetAll();
-            return Ok(users);
+            return Ok();
         }
 
         [HttpGet("{id}")]

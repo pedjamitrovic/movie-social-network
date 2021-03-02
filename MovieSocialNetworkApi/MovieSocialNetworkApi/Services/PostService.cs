@@ -64,7 +64,7 @@ namespace MovieSocialNetworkApi.Services
                 {
                     throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
                 }
-
+                
                 PagedList<Post> result = new PagedList<Post>
                 {
                     TotalCount = await posts.CountAsync(),
@@ -86,9 +86,17 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public Task<Post> GetById(int id)
+        public async Task<Post> GetById(int id)
         {
-             return _context.Posts.FirstOrDefaultAsync(e => e.Id == id);
+            try
+            {
+                return await _context.Posts.SingleOrDefaultAsync(e => e.Id == id);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
         }
 
         Task<Post> IPostService.Create(CreatePostCommand command)

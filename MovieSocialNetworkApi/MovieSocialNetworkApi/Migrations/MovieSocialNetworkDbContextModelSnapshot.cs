@@ -50,6 +50,9 @@ namespace MovieSocialNetworkApi.Migrations
                         .HasColumnType("bigint")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
+                    b.Property<DateTime>("BannedUntil")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -90,6 +93,21 @@ namespace MovieSocialNetworkApi.Migrations
                     b.HasIndex("OwnerId");
 
                     b.ToTable("Reactions");
+                });
+
+            modelBuilder.Entity("MovieSocialNetworkApi.Entities.Relation", b =>
+                {
+                    b.Property<long>("FollowingId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("FollowerId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("FollowingId", "FollowerId");
+
+                    b.HasIndex("FollowerId");
+
+                    b.ToTable("Relations");
                 });
 
             modelBuilder.Entity("MovieSocialNetworkApi.Entities.Comment", b =>
@@ -147,7 +165,7 @@ namespace MovieSocialNetworkApi.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PasswordHash")
+                    b.Property<string>("Password")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Username")
@@ -176,6 +194,25 @@ namespace MovieSocialNetworkApi.Migrations
                     b.Navigation("Content");
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("MovieSocialNetworkApi.Entities.Relation", b =>
+                {
+                    b.HasOne("MovieSocialNetworkApi.Entities.AbstractUser", "Follower")
+                        .WithMany("Following")
+                        .HasForeignKey("FollowerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MovieSocialNetworkApi.Entities.AbstractUser", "Following")
+                        .WithMany("Followers")
+                        .HasForeignKey("FollowingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Follower");
+
+                    b.Navigation("Following");
                 });
 
             modelBuilder.Entity("MovieSocialNetworkApi.Entities.Comment", b =>
@@ -216,6 +253,10 @@ namespace MovieSocialNetworkApi.Migrations
             modelBuilder.Entity("MovieSocialNetworkApi.Entities.AbstractUser", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Followers");
+
+                    b.Navigation("Following");
 
                     b.Navigation("Posts");
                 });

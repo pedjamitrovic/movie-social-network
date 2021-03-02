@@ -17,9 +17,25 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<Post> Posts { get; set; }
         public DbSet<Reaction> Reactions { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Relation> Relations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Relation>()
+                .ToTable("Relations")
+                .HasKey(e => new { e.FollowingId, e.FollowerId });
+
+            modelBuilder.Entity<Relation>()
+                .HasOne(e => e.Follower)
+                .WithMany(e => e.Following)
+                .HasForeignKey(e => e.FollowerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Relation>()
+                .HasOne(e => e.Following)
+                .WithMany(e => e.Followers)
+                .HasForeignKey(e => e.FollowingId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

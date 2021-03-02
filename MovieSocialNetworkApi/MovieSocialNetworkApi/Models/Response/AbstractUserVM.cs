@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Models
 {
-    public class UserVM
+    public class AbstractUserVM
     {
         public int Id { get; set; }
         public string Username { get; set; }

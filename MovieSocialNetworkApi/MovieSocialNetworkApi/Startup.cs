@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MovieSocialNetworkApi.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace MovieSocialNetworkApi
 {
@@ -26,6 +27,7 @@ namespace MovieSocialNetworkApi
         {
             services.AddCors();
             services.AddControllers();
+            services.AddHttpContextAccessor();
 
             // configure strongly typed settings objects
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -57,6 +59,8 @@ namespace MovieSocialNetworkApi
             // configure DI for application services
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IPostService, PostService>();
+            services.AddScoped<IAuthService, AuthService>();
+
             services.AddAutoMapper(typeof(Startup));
         }
 

@@ -9,14 +9,12 @@ namespace MovieSocialNetworkApi.Database
         {
         }
 
-        public DbSet<AbstractContent> AbstractContents { get; set; }
-        public DbSet<AbstractUser> AbstractUsers { get; set; }
-        public DbSet<Admin> Admins { get; set; }
-        public DbSet<Comment> Comments { get; set; }
+        public DbSet<Content> Contents { get; set; }
+        public DbSet<SystemEntity> SystemEntities { get; set; }
+        public DbSet<Report> Reports { get; set; }
+        public DbSet<Ban> Bans { get; set; }
         public DbSet<Group> Groups { get; set; }
-        public DbSet<Post> Posts { get; set; }
         public DbSet<Reaction> Reactions { get; set; }
-        public DbSet<User> Users { get; set; }
         public DbSet<Relation> Relations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -35,6 +33,18 @@ namespace MovieSocialNetworkApi.Database
                 .HasOne(e => e.Following)
                 .WithMany(e => e.Followers)
                 .HasForeignKey(e => e.FollowingId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(e => e.Reporter)
+                .WithMany(e => e.ReporterReports)
+                .HasForeignKey(e => e.ReporterId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Report>()
+                .HasOne(e => e.ReportedSystemEntity)
+                .WithMany(e => e.ReportedReports)
+                .HasForeignKey(e => e.ReportedSystemEntityId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

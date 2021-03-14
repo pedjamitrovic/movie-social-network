@@ -1,0 +1,436 @@
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MovieSocialNetworkApi.Database;
+using MovieSocialNetworkApi.Entities;
+using MovieSocialNetworkApi.Exceptions;
+using MovieSocialNetworkApi.Helpers;
+using MovieSocialNetworkApi.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace MovieSocialNetworkApi.Services
+{
+    public class SystemEntityService : ISystemEntityService
+    {
+        private readonly MovieSocialNetworkDbContext _context;
+        private readonly AppSettings _appSettings;
+        private readonly IMapper _mapper;
+        private readonly ILogger _logger;
+        private readonly IAuthService _auth;
+
+        public SystemEntityService(
+            MovieSocialNetworkDbContext context,
+            IOptions<AppSettings> appSettings,
+            IMapper mapper,
+            ILogger<UserService> logger,
+            IAuthService auth
+        )
+        {
+            _appSettings = appSettings.Value;
+            _mapper = mapper;
+            _logger = logger;
+            _context = context;
+            _auth = auth;
+        }
+
+        public async Task Report(int id, ReportCommand command)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                if (authUser.Id == id) throw new ForbiddenException($"User has no permission to report himself");
+
+                var sysEntity = await _context.SystemEntities.Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                var existingReport = sysEntity.ReportedReports.ToList().Find(e => e.ReporterId == authUser.Id);
+
+                if (existingReport != null)
+                {
+                    throw new BusinessException($"User {sysEntity.Id} already has active report by user {authUser.Id}");
+                }
+
+                var report = new Report
+                {
+                    Reason = command.Reason,
+                    ReporterId = authUser.Id,
+                    ReportedSystemEntityId = sysEntity.Id
+                };
+
+                _context.Reports.Add(report);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task Ban(int id, BanCommand command)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                var ban = new Ban
+                {
+                    BannedFrom = DateTime.UtcNow,
+                    BannedUntil = command.BannedUntil,
+                    Reason = command.Reason,
+                    BannedEntity = sysEntity
+                };
+
+                _context.Bans.Add(ban);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task ChangeDescription(int id, ChangeDescriptionCommand command)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                sysEntity.Description = command.Description;
+
+                _context.SystemEntities.Update(sysEntity);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task ChangeImage(int id, string type, string imagePath)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"User not found");
+                if (authUser.Id != id) throw new ForbiddenException($"User has no permission to change image of user with id {id}");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
+
+                switch (type)
+                {
+                    case ImageType.Profile:
+                        sysEntity.ProfileImagePath = imagePath;
+                        break;
+                    case ImageType.Cover:
+                        sysEntity.CoverImagePath = imagePath;
+                        break;
+                    default:
+                        throw new BusinessException($"Image type ${type} not supported");
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task Follow(int id)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"User not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
+
+                var relation = new Relation
+                {
+                    FollowerId = authUser.Id,
+                    FollowingId = sysEntity.Id,
+                };
+
+                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
+
+                if (existingRelation == null)
+                {
+                    _context.Relations.Add(relation);
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<PagedList<SystemEntityVM>> GetFollowers(int id, Paging paging, Sorting sorting)
+        {
+            try
+            {
+                var sysEntity = await _context.SystemEntities.Include(e => e.Followers).SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
+
+                foreach (var relation in sysEntity.Followers)
+                {
+                    await _context.Entry(relation).Reference(e => e.Follower).LoadAsync();
+                }
+
+                var followers = sysEntity.Followers.Select(e => e.Follower).AsQueryable();
+
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
+                {
+                    sorting.SortBy = "followers";
+                }
+
+                if (sorting.SortBy == "followers")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        followers = followers.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                    }
+                    else
+                    {
+                        followers = followers.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                var result = new PagedList<SystemEntityVM>
+                {
+                    TotalCount = await followers.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
+                };
+
+                var items = await followers.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<SystemEntity>, List<SystemEntityVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<PagedList<SystemEntityVM>> GetFollowing(int id, Paging paging, Sorting sorting)
+        {
+            try
+            {
+                var sysEntity = await _context.SystemEntities.Include(e => e.Following).SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
+
+                foreach (var relation in sysEntity.Following)
+                {
+                    await _context.Entry(relation).Reference(e => e.Following).LoadAsync();
+                }
+
+                var following = sysEntity.Followers.Select(e => e.Following).AsQueryable();
+
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
+                {
+                    sorting.SortBy = "followers";
+                }
+
+                if (sorting.SortBy == "followers")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        following = following.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                    }
+                    else
+                    {
+                        following = following.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                var result = new PagedList<SystemEntityVM>
+                {
+                    TotalCount = await following.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
+                };
+
+                var items = await following.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<SystemEntity>, List<SystemEntityVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task Unfollow(int id)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                var relation = new Relation
+                {
+                    FollowerId = authUser.Id,
+                    FollowingId = sysEntity.Id,
+                };
+
+                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
+
+                if (existingRelation != null)
+                {
+                    _context.Relations.Remove(existingRelation);
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<PagedList<CommentVM>> GetComments(int id, Paging paging, Sorting sorting)
+        {
+            try
+            {
+                var comments = _context.Contents.OfType<Comment>().AsQueryable();
+
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
+                {
+                    sorting.SortBy = "createdOn";
+                }
+
+                if (sorting.SortBy == "createdOn")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        comments = comments.OrderByDescending((e) => e.CreatedOn);
+                    }
+                    else
+                    {
+                        comments = comments.OrderBy((e) => e.CreatedOn);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                var result = new PagedList<CommentVM>
+                {
+                    TotalCount = await comments.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
+                };
+
+                var items = await comments.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<Comment>, List<CommentVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<PagedList<PostVM>> GetPosts(int id, Paging paging, Sorting sorting)
+        {
+            try
+            {
+                var posts = _context.Contents.OfType<Post>().AsQueryable();
+
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
+                {
+                    sorting.SortBy = "createdOn";
+                }
+
+                if (sorting.SortBy == "createdOn")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        posts = posts.OrderByDescending((e) => e.CreatedOn);
+                    }
+                    else
+                    {
+                        posts = posts.OrderBy((e) => e.CreatedOn);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                var result = new PagedList<PostVM>
+                {
+                    TotalCount = await posts.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
+                };
+
+                var items = await posts.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<Post>, List<PostVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+    }
+}

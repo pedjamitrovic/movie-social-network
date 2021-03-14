@@ -15,16 +15,16 @@ namespace MovieSocialNetworkApi.Services
 {
     public class PostService : IPostService
     {
-        private readonly AppSettings _appSettings;
         private readonly MovieSocialNetworkDbContext _context;
+        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
 
         public PostService(
+            MovieSocialNetworkDbContext context,
             IOptions<AppSettings> appSettings,
             IMapper mapper,
-            ILogger<PostService> logger,
-            MovieSocialNetworkDbContext context
+            ILogger<PostService> logger
         )
         {
             _appSettings = appSettings.Value;
@@ -37,7 +37,7 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var posts = _context.Posts.AsQueryable();
+                var posts = _context.Contents.OfType<Post>().AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
                 {
@@ -90,7 +90,7 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                return await _context.Posts.SingleOrDefaultAsync(e => e.Id == id);
+                return await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == id);
             }
             catch (Exception e)
             {

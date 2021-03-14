@@ -6,10 +6,10 @@ namespace MovieSocialNetworkApi.Entities
 {
     public class Relation
     {
-        public long FollowerId { get; set; }
-        public long FollowingId { get; set; }
+        public int FollowerId { get; set; }
+        public int FollowingId { get; set; }
 
-        public virtual AbstractUser Follower { get; set; }
-        public virtual AbstractUser Following { get; set; }
+        public virtual SystemEntity Follower { get; set; }
+        public virtual SystemEntity Following { get; set; }
     }
 }

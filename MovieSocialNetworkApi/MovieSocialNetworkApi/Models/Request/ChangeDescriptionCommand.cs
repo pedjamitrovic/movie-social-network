@@ -2,9 +2,9 @@
 
 namespace MovieSocialNetworkApi.Models
 {
-    public class ReportCommand
+    public class ChangeDescriptionCommand
     {
         [Required]
-        public string Reason { get; set; }
+        public string Description { get; set; }
     }
 }

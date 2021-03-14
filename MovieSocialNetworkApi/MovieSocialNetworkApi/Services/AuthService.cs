@@ -15,13 +15,13 @@ namespace MovieSocialNetworkApi.Services
     {
         private string UserId { get { return _httpContextAccessor.HttpContext?.User.Identity.Name; } }
 
-        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly MovieSocialNetworkDbContext _context;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ILogger _logger;
 
         public AuthService(
-            IHttpContextAccessor httpContextAccessor,
             MovieSocialNetworkDbContext context,
+            IHttpContextAccessor httpContextAccessor,
             ILogger<AuthService> logger
         )
         {
@@ -30,12 +30,12 @@ namespace MovieSocialNetworkApi.Services
             _logger = logger;
         }
 
-        public async Task<AbstractUser> GetAuthenticatedUser()
+        public async Task<User> GetAuthenticatedUser()
         {
             try
             {
                 if (UserId == null) { return null; }
-                var user = await _context.Users.SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
                 return user;
             }
             catch (Exception e)

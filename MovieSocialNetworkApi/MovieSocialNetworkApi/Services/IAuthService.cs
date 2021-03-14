@@ -7,6 +7,6 @@ namespace MovieSocialNetworkApi.Services
 {
     public interface IAuthService
     {
-        public Task<AbstractUser> GetAuthenticatedUser();
+        public Task<User> GetAuthenticatedUser();
     }
 }

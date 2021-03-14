@@ -32,10 +32,6 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
-            catch
-            {
-                return BadRequest();
-            }
         }
 
         [HttpGet("{id}")]

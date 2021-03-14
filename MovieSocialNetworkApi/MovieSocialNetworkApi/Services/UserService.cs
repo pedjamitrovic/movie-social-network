@@ -15,39 +15,35 @@ using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Http;
 
 namespace MovieSocialNetworkApi.Services
 {
     public class UserService : IUserService
     {
-        private readonly AppSettings _appSettings;
         private readonly MovieSocialNetworkDbContext _context;
+        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
-        private readonly IAuthService _auth;
 
         public UserService(
+            MovieSocialNetworkDbContext context,
             IOptions<AppSettings> appSettings,
             IMapper mapper,
-            ILogger<UserService> logger,
-            MovieSocialNetworkDbContext context,
-            IAuthService auth
+            ILogger<UserService> logger
         )
         {
             _appSettings = appSettings.Value;
             _mapper = mapper;
             _logger = logger;
             _context = context;
-            _auth = auth;
         }
 
-        public async Task<AbstractUserVM> GetById(int id)
+        public async Task<UserVM> GetById(int id)
         {
             try
             {
-                var user = await _context.Users.SingleOrDefaultAsync(e => e.Id == id);
-                return _mapper.Map<AbstractUserVM>(user);
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Id == id);
+                return _mapper.Map<UserVM>(user);
             }
             catch (Exception e)
             {
@@ -56,105 +52,53 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task Ban(BanCommand command)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task ChangeDescription(ChangeAboutCommand command)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task ChangeImage(ChangeImageCommand command)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Delete(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Follow(int id)
+        public async Task<PagedList<UserVM>> GetList(Paging paging, Sorting sorting, string q)
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var users = _context.SystemEntities.OfType<User>().AsQueryable();
 
-                var user = await _context.AbstractUsers.SingleOrDefaultAsync(e => e.Id == id);
-                if (user == null) throw new BusinessException($"User with {id} not found");
-
-                var relation = new Relation
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
-                    FollowerId = authUser.Id,
-                    FollowingId = user.Id,
+                    sorting.SortBy = "followers";
+                }
+
+                if (sorting.SortBy == "followers")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        users = users.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                    }
+                    else
+                    {
+                        users = users.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                PagedList<UserVM> result = new PagedList<UserVM>
+                {
+                    TotalCount = await users.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
                 };
 
-                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
+                var items = await users.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<User>, List<UserVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
-                if (existingRelation == null)
-                {
-                    _context.Relations.Add(relation);
-
-                    await _context.SaveChangesAsync();
-                }
+                return result;
             }
             catch (Exception e)
             {
                 _logger.LogError(e.ToString());
                 throw;
             }
-        }
-
-        public async Task<IEnumerable<AbstractUserVM>> GetFollowers(int id)
-        {
-            try
-            {
-                var user = await _context.Users.Include(e => e.Followers).SingleOrDefaultAsync(e => e.Id == id);
-                if (user == null) throw new BusinessException($"User with id {id} not found");
-
-                foreach (var relation in user.Followers)
-                {
-                    await _context.Entry(relation).Reference(e => e.Follower).LoadAsync();
-                }
-                var followers = user.Followers.Select(e => e.Follower).ToList();
-
-                return _mapper.Map<List<AbstractUser>, List<AbstractUserVM>>(followers);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString());
-                throw;
-            }
-        }
-
-        public async Task<IEnumerable<AbstractUserVM>> GetFollowing(int id)
-        {
-            try
-            {
-                var user = await _context.Users.Include(e => e.Following).SingleOrDefaultAsync(e => e.Id == id);
-                if (user == null) throw new BusinessException($"User with id {id} not found");
-
-                foreach (var relation in user.Followers)
-                {
-                    await _context.Entry(relation).Reference(e => e.Following).LoadAsync();
-                }
-                var following = user.Followers.Select(e => e.Following).ToList();
-
-                return _mapper.Map<List<AbstractUser>, List<AbstractUserVM>>(following);
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString());
-                throw;
-            }
-        }
-
-        public async Task<PagedList<AbstractUserVM>> GetList(Paging paging, Sorting sorting, string q)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task<AuthenticatedUser> Login(LoginCommand command)
@@ -163,7 +107,7 @@ namespace MovieSocialNetworkApi.Services
             {
                 var hashedPassword = PasswordHelper.SHA256(command.Password, _appSettings.PwSecret);
 
-                var user = await _context.Users.SingleOrDefaultAsync(
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(
                     e => e.Username == command.Username && e.Password == hashedPassword
                 );
 
@@ -203,10 +147,10 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var user = await _context.Users.SingleOrDefaultAsync(e => e.Username == command.Username);
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Username == command.Username);
                 if (user != null) throw new BusinessException("User with provided username already exists");
 
-                user = await _context.Users.SingleOrDefaultAsync(e => e.Email == command.Email);
+                user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Email == command.Email);
                 if (user != null) throw new BusinessException("User with provided email already exists");
 
                 user = new User
@@ -218,7 +162,7 @@ namespace MovieSocialNetworkApi.Services
                     Description = string.Empty
                 };
 
-                _context.Users.Add(user);
+                _context.SystemEntities.Add(user);
                 await _context.SaveChangesAsync();
 
                 var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
@@ -243,43 +187,6 @@ namespace MovieSocialNetworkApi.Services
                 authenticatedUser.Token = tokenHandler.WriteToken(token);
 
                 return authenticatedUser;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString());
-                throw;
-            }
-        }
-
-        public async Task Report(ReportCommand command)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task Unfollow(int id)
-        {
-            try
-            {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
-
-                var user = await _context.AbstractUsers.SingleOrDefaultAsync(e => e.Id == id);
-                if (user == null) throw new BusinessException($"User with {id} not found");
-
-                var relation = new Relation
-                {
-                    FollowerId = authUser.Id,
-                    FollowingId = user.Id,
-                };
-
-                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
-
-                if (existingRelation != null)
-                {
-                    _context.Relations.Remove(existingRelation);
-
-                    await _context.SaveChangesAsync();
-                }
             }
             catch (Exception e)
             {

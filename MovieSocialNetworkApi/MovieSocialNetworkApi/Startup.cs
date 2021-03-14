@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MovieSocialNetworkApi.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.FileProviders;
+using System.IO;
 
 namespace MovieSocialNetworkApi
 {
@@ -54,12 +57,21 @@ namespace MovieSocialNetworkApi
                 };
             });
 
+            services.Configure<FormOptions>(x =>
+            {
+                x.ValueLengthLimit = int.MaxValue;
+                x.MultipartBodyLengthLimit = int.MaxValue;
+                x.MemoryBufferThreshold = int.MaxValue;
+            });
+
             services.AddDbContext<MovieSocialNetworkDbContext>(options => options.UseSqlServer("name=ConnectionStrings:MovieSocialNetworkDb"));
 
             // configure DI for application services
+            services.AddScoped<ISystemEntityService, SystemEntityService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IFileService, FileService>();
 
             services.AddAutoMapper(typeof(Startup));
         }
@@ -74,6 +86,14 @@ namespace MovieSocialNetworkApi
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader()
+            );
+
+            app.UseStaticFiles(
+                new StaticFileOptions
+                {
+                    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Resources")),
+                    RequestPath = new PathString("/Resources")
+                }
             );
 
             app.UseAuthentication();

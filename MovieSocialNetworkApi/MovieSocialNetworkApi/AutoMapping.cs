@@ -9,7 +9,8 @@ namespace MovieSocialNetworkApi
         public AutoMapping()
         {
             CreateMap<AuthenticatedUser, User>().ReverseMap();
-            CreateMap<AbstractUserVM, User>().ReverseMap();
+            CreateMap<UserVM, User>().ReverseMap();
+            CreateMap<SystemEntityVM, SystemEntity>().ReverseMap();
         }
     }
 }

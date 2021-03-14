@@ -7,11 +7,8 @@ namespace MovieSocialNetworkApi.Models
     public class BanCommand
     {
         [Required]
-        [DataMember(Name = "id")]
-        public string Id { get; set; }
-
-        [Required]
-        [DataMember(Name = "bannedUntil")]
         public DateTime BannedUntil { get; set; }
+        [Required]
+        public string Reason { get; set; }
     }
 }

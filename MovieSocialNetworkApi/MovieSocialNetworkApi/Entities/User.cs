@@ -1,5 +1,9 @@
-﻿using MovieSocialNetworkApi.Models.Response;
+﻿using Microsoft.EntityFrameworkCore;
+using MovieSocialNetworkApi.Database;
+using MovieSocialNetworkApi.Models.Response;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Entities
 {
@@ -11,11 +15,20 @@ namespace MovieSocialNetworkApi.Entities
         public string Password { get; set; }
         [EmailAddress]
         public string Email { get; set; }
-        public override ReportedDetails GetDetails()
+        public override ReportedDetails GetReportedDetails()
         {
-            var reportedDetails = new ReportedDetails();
-            reportedDetails.Details.Add("type", nameof(User));
-            reportedDetails.Details.Add("reportedId", Id.ToString());
+            var reportedDetails = new ReportedDetails
+            {
+                Type = nameof(User),
+                Id = Id,
+
+                ReportedStats = ReportedReports
+                .GroupBy(e => e.Reason)
+                .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })
+                .OrderByDescending(rs => rs.Count)
+                .ToList()
+            };
+
             return reportedDetails;
         }
     }

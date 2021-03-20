@@ -1,9 +1,6 @@
 ﻿using MovieSocialNetworkApi.Models.Response;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Entities
 {
@@ -21,6 +18,6 @@ namespace MovieSocialNetworkApi.Entities
         public virtual ICollection<Report> ReporterReports { get; set; }
         public virtual ICollection<Report> ReportedReports { get; set; }
         public virtual ICollection<Ban> Bans { get; set; }
-        public abstract ReportedDetails GetDetails();
+        public abstract ReportedDetails GetReportedDetails();
     }
 }

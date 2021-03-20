@@ -13,7 +13,6 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<SystemEntity> SystemEntities { get; set; }
         public DbSet<Report> Reports { get; set; }
         public DbSet<Ban> Bans { get; set; }
-        public DbSet<Group> Groups { get; set; }
         public DbSet<Reaction> Reactions { get; set; }
         public DbSet<Relation> Relations { get; set; }
 

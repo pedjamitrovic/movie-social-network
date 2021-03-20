@@ -21,6 +21,8 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                if (file == null) return null;
+
                 var folderName = Path.Combine("Resources", "Files");
                 var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), folderName);
 

@@ -7,6 +7,7 @@ using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,24 +18,24 @@ namespace MovieSocialNetworkApi.Services
     public class SystemEntityService : ISystemEntityService
     {
         private readonly MovieSocialNetworkDbContext _context;
-        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
+        private readonly AppSettings _appSettings;
 
         public SystemEntityService(
             MovieSocialNetworkDbContext context,
-            IOptions<AppSettings> appSettings,
             IMapper mapper,
             ILogger<UserService> logger,
-            IAuthService auth
+            IAuthService auth,
+            IOptions<AppSettings> appSettings
         )
         {
-            _appSettings = appSettings.Value;
+            _context = context;
             _mapper = mapper;
             _logger = logger;
-            _context = context;
             _auth = auth;
+            _appSettings = appSettings.Value;
         }
 
         public async Task Report(int id, ReportCommand command)
@@ -101,30 +102,6 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
-
-        public async Task ChangeDescription(int id, ChangeDescriptionCommand command)
-        {
-            try
-            {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
-
-                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
-                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
-
-                sysEntity.Description = command.Description;
-
-                _context.SystemEntities.Update(sysEntity);
-
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString());
-                throw;
-            }
-        }
-
         public async Task ChangeImage(int id, string type, string imagePath)
         {
             try
@@ -157,6 +134,30 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
+        public async Task ChangeDescription(int id, ChangeDescriptionCommand command)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                sysEntity.Description = command.Description;
+
+                _context.SystemEntities.Update(sysEntity);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+
         public async Task Follow(int id)
         {
             try
@@ -178,6 +179,38 @@ namespace MovieSocialNetworkApi.Services
                 if (existingRelation == null)
                 {
                     _context.Relations.Add(relation);
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task Unfollow(int id)
+        {
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
+
+                var relation = new Relation
+                {
+                    FollowerId = authUser.Id,
+                    FollowingId = sysEntity.Id,
+                };
+
+                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
+
+                if (existingRelation != null)
+                {
+                    _context.Relations.Remove(existingRelation);
 
                     await _context.SaveChangesAsync();
                 }
@@ -303,30 +336,47 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task Unfollow(int id)
+        public async Task<PagedList<PostVM>> GetPosts(int id, Paging paging, Sorting sorting)
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var posts = _context.Contents.OfType<Post>().AsQueryable();
 
-                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
-                if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
-
-                var relation = new Relation
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
-                    FollowerId = authUser.Id,
-                    FollowingId = sysEntity.Id,
+                    sorting.SortBy = "createdOn";
+                }
+
+                if (sorting.SortBy == "createdOn")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        posts = posts.OrderByDescending((e) => e.CreatedOn);
+                    }
+                    else
+                    {
+                        posts = posts.OrderBy((e) => e.CreatedOn);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                var result = new PagedList<PostVM>
+                {
+                    TotalCount = await posts.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
                 };
 
-                var existingRelation = await _context.Relations.FindAsync(relation.FollowingId, relation.FollowerId);
+                var items = await posts.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<Post>, List<PostVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
-                if (existingRelation != null)
-                {
-                    _context.Relations.Remove(existingRelation);
-
-                    await _context.SaveChangesAsync();
-                }
+                return result;
             }
             catch (Exception e)
             {
@@ -383,27 +433,26 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
-
-        public async Task<PagedList<PostVM>> GetPosts(int id, Paging paging, Sorting sorting)
+        public async Task<PagedList<ReportedDetails>> GetBannable(Paging paging, Sorting sorting)
         {
             try
             {
-                var posts = _context.Contents.OfType<Post>().AsQueryable();
+                var sysEntities = _context.SystemEntities.Include(e => e.ReportedReports).Where(e => e.ReportedReports.Count > _appSettings.MinReportsCount).AsQueryable();
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
-                    sorting.SortBy = "createdOn";
+                    sorting.SortBy = "reportedReports";
                 }
 
-                if (sorting.SortBy == "createdOn")
+                if (sorting.SortBy == "reportedReports")
                 {
                     if (sorting.SortOrder == SortOrder.Desc)
                     {
-                        posts = posts.OrderByDescending((e) => e.CreatedOn);
+                        sysEntities = sysEntities.OrderByDescending((e) => e.ReportedReports.Count);
                     }
                     else
                     {
-                        posts = posts.OrderBy((e) => e.CreatedOn);
+                        sysEntities = sysEntities.OrderBy((e) => e.ReportedReports.Count);
                     }
                 }
                 else
@@ -411,17 +460,26 @@ namespace MovieSocialNetworkApi.Services
                     throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
                 }
 
-                var result = new PagedList<PostVM>
+                PagedList<ReportedDetails> result = new PagedList<ReportedDetails>
                 {
-                    TotalCount = await posts.CountAsync(),
+                    TotalCount = await sysEntities.CountAsync(),
                     PageSize = paging.PageSize,
                     Page = paging.PageNumber,
                     SortBy = sorting.SortBy,
                     SortOrder = sorting.SortOrder,
                 };
 
-                var items = await posts.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
-                result.Items = _mapper.Map<List<Post>, List<PostVM>>(items);
+                var bannableSysEntites = await sysEntities.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+
+                var items = new List<ReportedDetails>();
+
+                foreach (var sysEntity in bannableSysEntites)
+                {
+                    var rd = sysEntity.GetReportedDetails();
+                    items.Add(rd);
+                }
+
+                result.Items = items;
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
                 return result;

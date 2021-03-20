@@ -12,5 +12,6 @@ namespace MovieSocialNetworkApi.Entities
         public DateTime BannedUntil { get; set; }
         public string Reason { get; set; }
         public virtual SystemEntity BannedEntity { get; set; }
+        public virtual ICollection<Report> Reports { get; set; }
     }
 }

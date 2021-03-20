@@ -4,10 +4,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MovieSocialNetworkApi.Models
 {
-    public class CreatePostCommand
+    public class CreateCommentCommand
     {
         [Required]
+        public int PostId { get; set; }
+        [Required]
         public string Text { get; set; }
-        public IFormFile File { get; set; }
     }
 }

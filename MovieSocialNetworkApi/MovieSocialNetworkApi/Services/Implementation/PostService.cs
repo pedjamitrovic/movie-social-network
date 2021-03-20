@@ -1,39 +1,39 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Services
 {
     public class PostService : IPostService
     {
         private readonly MovieSocialNetworkDbContext _context;
-        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
+        private readonly IAuthService _auth;
 
         public PostService(
             MovieSocialNetworkDbContext context,
-            IOptions<AppSettings> appSettings,
             IMapper mapper,
-            ILogger<PostService> logger
+            ILogger<PostService> logger,
+            IAuthService auth
         )
         {
-            _appSettings = appSettings.Value;
+            _context = context;
             _mapper = mapper;
             _logger = logger;
-            _context = context;
+            _auth = auth;
         }
 
-        public async Task<PagedList<Post>> GetList(Paging paging, Sorting sorting, string q)
+        public async Task<PagedList<PostVM>> GetList(Paging paging, Sorting sorting, string q)
         {
             try
             {
@@ -64,8 +64,8 @@ namespace MovieSocialNetworkApi.Services
                 {
                     throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
                 }
-                
-                PagedList<Post> result = new PagedList<Post>
+
+                PagedList<PostVM> result = new PagedList<PostVM>
                 {
                     TotalCount = await posts.CountAsync(),
                     PageSize = paging.PageSize,
@@ -74,7 +74,8 @@ namespace MovieSocialNetworkApi.Services
                     SortOrder = sorting.SortOrder,
                 };
 
-                result.Items = await posts.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                var items = await posts.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<Post>, List<PostVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
                 return result;
@@ -86,11 +87,12 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<Post> GetById(int id)
+        public async Task<PostVM> GetById(int id)
         {
             try
             {
-                return await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == id);
+                var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == id);
+                return _mapper.Map<PostVM>(post);
             }
             catch (Exception e)
             {
@@ -99,24 +101,30 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        Task<Post> IPostService.Create(CreatePostCommand command)
+        public async Task<PostVM> Create(string filePath, CreatePostCommand command)
         {
-            throw new NotImplementedException();
-        }
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
-        Task<bool> IPostService.React(CreateReactionCommand command)
-        {
-            throw new NotImplementedException();
-        }
+                var post = new Post
+                {
+                    Text = command.Text,
+                    CreatedOn = DateTime.UtcNow,
+                    FilePath = filePath
+                };
 
-        Task<bool> IPostService.Report(ReportCommand command)
-        {
-            throw new NotImplementedException();
-        }
+                _context.Contents.Add(post);
+                await _context.SaveChangesAsync();
 
-        Task<bool> IPostService.Delete(int id)
-        {
-            throw new NotImplementedException();
+                return _mapper.Map<Post, PostVM>(post);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
         }
     }
 }

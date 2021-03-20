@@ -11,9 +11,11 @@ namespace MovieSocialNetworkApi.Entities
         public string Reason { get; set; }
         public int ReporterId { get; set; }
         public int ReportedSystemEntityId { get; set; }
+        public bool Reviewed { get; set; }
         public virtual SystemEntity Reporter { get; set; }
         public virtual SystemEntity ReportedSystemEntity { get; set; }
         public virtual Content ReportedContent { get; set; }
+        public virtual Ban IssuedBan { get; set; }
 
         public IReportable Reported { 
             get

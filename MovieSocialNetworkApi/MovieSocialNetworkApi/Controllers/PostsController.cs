@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
@@ -14,10 +15,15 @@ namespace MovieSocialNetworkApi.Controllers
     public class PostsController : Controller
     {
         private IPostService _postService;
+        private IFileService _fileService;
 
-        public PostsController(IPostService postService)
+        public PostsController(
+            IPostService postService,
+            IFileService fileService
+        )
         {
             _postService = postService;
+            _fileService = fileService;
         }
 
         [HttpGet]
@@ -35,13 +41,36 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var user = _postService.GetById(id);
+            try
+            {
+                var result = await _postService.GetById(id);
+                return Ok(result);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+        }
 
-            if (user == null) return NotFound();
-
-            return Ok(user);
+        [HttpPost, DisableRequestSizeLimit]
+        public async Task<IActionResult> Create(CreatePostCommand command)
+        {
+            try
+            {
+                var filePath = await _fileService.SaveFile(command.File);
+                await _postService.Create(filePath, command);
+                return Ok(filePath);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
     }
 }

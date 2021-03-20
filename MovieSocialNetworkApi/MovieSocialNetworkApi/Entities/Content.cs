@@ -14,6 +14,6 @@ namespace MovieSocialNetworkApi.Entities
         public virtual SystemEntity Creator { get; set; }
         public virtual ICollection<Reaction> Reactions { get; set; }
         public virtual ICollection<Report> ReportedReports { get; set; }
-        public abstract ReportedDetails GetDetails();
+        public abstract ReportedDetails GetReportedDetails();
     }
 }

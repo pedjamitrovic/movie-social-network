@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace MovieSocialNetworkApi.Models.Response
 {
     public class ReportedDetails
     {
-        public Dictionary<string, string> Details { get; } = new Dictionary<string, string>();
+        public string Type { get; set; }
+        public int Id { get; set; }
+        public List<ReportedStats> ReportedStats { get; set; }
     }
 }

@@ -101,48 +101,6 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<AuthenticatedUser> Login(LoginCommand command)
-        {
-            try
-            {
-                var hashedPassword = PasswordHelper.SHA256(command.Password, _appSettings.PwSecret);
-
-                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(
-                    e => e.Username == command.Username && e.Password == hashedPassword
-                );
-
-                if (user == null) throw new BusinessException("Invalid username or password");
-
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
-
-                var tokenDescriptor = new SecurityTokenDescriptor
-                {
-                    Subject = new ClaimsIdentity(
-                        new Claim[]
-                        {
-                            new Claim(ClaimTypes.Name, user.Id.ToString()),
-                            new Claim(ClaimTypes.Role, user.Role)
-                        }
-                    ),
-                    Expires = DateTime.UtcNow.AddDays(2),
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                };
-
-                var token = tokenHandler.CreateToken(tokenDescriptor);
-
-                var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
-                authenticatedUser.Token = tokenHandler.WriteToken(token);
-
-                return authenticatedUser;
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e.ToString());
-                throw;
-            }
-        }
-
         public async Task<AuthenticatedUser> Register(RegisterCommand command)
         {
             try
@@ -184,6 +142,48 @@ namespace MovieSocialNetworkApi.Services
                 };
 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
+                authenticatedUser.Token = tokenHandler.WriteToken(token);
+
+                return authenticatedUser;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<AuthenticatedUser> Login(LoginCommand command)
+        {
+            try
+            {
+                var hashedPassword = PasswordHelper.SHA256(command.Password, _appSettings.PwSecret);
+
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(
+                    e => e.Username == command.Username && e.Password == hashedPassword
+                );
+
+                if (user == null) throw new BusinessException("Invalid username or password");
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
+
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(
+                        new Claim[]
+                        {
+                            new Claim(ClaimTypes.Name, user.Id.ToString()),
+                            new Claim(ClaimTypes.Role, user.Role)
+                        }
+                    ),
+                    Expires = DateTime.UtcNow.AddDays(2),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
                 authenticatedUser.Token = tokenHandler.WriteToken(token);
 
                 return authenticatedUser;

@@ -1,5 +1,6 @@
 ﻿using MovieSocialNetworkApi.Models.Response;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace MovieSocialNetworkApi.Entities
 {
@@ -8,11 +9,20 @@ namespace MovieSocialNetworkApi.Entities
         [MinLength(3)]
         public string Title { get; set; }
         public string Subtitle { get; set; }
-        public override ReportedDetails GetDetails()
+        public override ReportedDetails GetReportedDetails()
         {
-            var reportedDetails = new ReportedDetails();
-            reportedDetails.Details.Add("type", nameof(Group));
-            reportedDetails.Details.Add("reportedId", Id.ToString());
+            var reportedDetails = new ReportedDetails
+            {
+                Type = nameof(Group),
+                Id = Id,
+
+                ReportedStats = ReportedReports
+                .GroupBy(e => e.Reason)
+                .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })
+                .OrderByDescending(rs => rs.Count)
+                .ToList()
+            };
+
             return reportedDetails;
         }
     }

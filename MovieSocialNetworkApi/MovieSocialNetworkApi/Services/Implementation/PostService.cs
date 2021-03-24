@@ -108,12 +108,21 @@ namespace MovieSocialNetworkApi.Services
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
+                Group forGroup = null;
+
+                if (command.ForGroupId != null)
+                {
+                    forGroup = await _context.SystemEntities.OfType<Group>().SingleOrDefaultAsync(e => e.Id == command.ForGroupId);
+                    if (forGroup == null) throw new BusinessException($"Group with id {command.ForGroupId} not found");
+                }
+
                 var post = new Post
                 {
                     Text = command.Text,
                     CreatedOn = DateTime.UtcNow,
                     FilePath = filePath,
-                    Creator = authUser
+                    Creator = authUser,
+                    ForGroup = forGroup
                 };
 
                 _context.Contents.Add(post);

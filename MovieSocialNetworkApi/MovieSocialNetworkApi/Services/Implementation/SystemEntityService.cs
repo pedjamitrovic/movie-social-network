@@ -80,6 +80,7 @@ namespace MovieSocialNetworkApi.Services
             {
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                if (authUser.Role != Role.Admin) throw new ForbiddenException($"User has no permission to ban user with id {id}");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");

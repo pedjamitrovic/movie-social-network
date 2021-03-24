@@ -8,6 +8,7 @@ namespace MovieSocialNetworkApi.Entities
     {
         public string FilePath { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
+        public virtual Group ForGroup { get; set; }
         public override ReportedDetails GetReportedDetails()
         {
             var reportedDetails = new ReportedDetails

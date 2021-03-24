@@ -23,16 +23,19 @@ namespace MovieSocialNetworkApi.Services
         private readonly MovieSocialNetworkDbContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
+        private readonly IAuthService _auth;
 
         public GroupService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<UserService> logger
+            ILogger<UserService> logger,
+            IAuthService auth
         )
         {
             _mapper = mapper;
             _logger = logger;
             _context = context;
+            _auth = auth;
         }
 
         public async Task<GroupVM> GetById(int id)
@@ -102,6 +105,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var group = await _context.SystemEntities.OfType<Group>().SingleOrDefaultAsync(e => e.Title == command.Title);
                 if (group != null) throw new BusinessException("Group with provided title already exists");
 
@@ -109,10 +115,20 @@ namespace MovieSocialNetworkApi.Services
                 {
                     Title = command.Title,
                     Subtitle = command.Subtitle,
-                    Description = string.Empty
+                    Description = string.Empty,
+                   
                 };
 
                 _context.SystemEntities.Add(group);
+
+                var groupAdmin = new GroupAdmin
+                {
+                    Group = group,
+                    Admin = authUser
+                };
+
+                _context.GroupAdmins.Add(groupAdmin);
+
                 await _context.SaveChangesAsync();
 
                 return _mapper.Map<GroupVM>(group);

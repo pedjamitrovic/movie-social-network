@@ -105,14 +105,33 @@ namespace MovieSocialNetworkApi.Services
 
         public async Task Delete(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
+                var post = await _context.Contents.OfType<Post>().Include(e => e.Creator).Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
+                if (post == null) throw new BusinessException($"Post with {id} not found");
+
+                if (authUser.Id != post.Creator.Id && authUser.Role != Role.Admin) throw new ForbiddenException($"User has no permission to delete post with id {id}");
+                if (post.ReportedReports.Count >= _appSettings.MinReportsCount) throw new ForbiddenException($"Post can't be deleted as it's currently being reviewed because users have reported it multiple times");
+
+                _context.Contents.Remove(post);
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
         }
 
         public async Task<PagedList<ReportedDetails>> GetBannable(Paging paging, Sorting sorting)
         {
             try
             {
-                var contents = _context.SystemEntities.Include(e => e.ReportedReports).Where(e => e.ReportedReports.Count > _appSettings.MinReportsCount).AsQueryable();
+                var contents = _context.Contents.Include(e => e.ReportedReports).Where(e => e.ReportedReports.Count > _appSettings.MinReportsCount).AsQueryable();
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {

@@ -1,4 +1,5 @@
 ﻿using MovieSocialNetworkApi.Models.Response;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
@@ -9,6 +10,7 @@ namespace MovieSocialNetworkApi.Entities
         [MinLength(3)]
         public string Title { get; set; }
         public string Subtitle { get; set; }
+        public virtual ICollection<GroupAdmin> GroupAdmin { get; set; }
         public override ReportedDetails GetReportedDetails()
         {
             var reportedDetails = new ReportedDetails

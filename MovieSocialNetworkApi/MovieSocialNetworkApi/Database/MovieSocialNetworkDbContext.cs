@@ -15,11 +15,11 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<Ban> Bans { get; set; }
         public DbSet<Reaction> Reactions { get; set; }
         public DbSet<Relation> Relations { get; set; }
+        public DbSet<GroupAdmin> GroupAdmins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Relation>()
-                .ToTable("Relations")
                 .HasKey(e => new { e.FollowingId, e.FollowerId });
 
             modelBuilder.Entity<Relation>()
@@ -44,6 +44,21 @@ namespace MovieSocialNetworkApi.Database
                 .HasOne(e => e.ReportedSystemEntity)
                 .WithMany(e => e.ReportedReports)
                 .HasForeignKey(e => e.ReportedSystemEntityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupAdmin>()
+                .HasKey(e => new { e.GroupId, e.AdminId });
+
+            modelBuilder.Entity<GroupAdmin>()
+                .HasOne(e => e.Group)
+                .WithMany(e => e.GroupAdmin)
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GroupAdmin>()
+                .HasOne(e => e.Admin)
+                .WithMany(e => e.GroupAdmin)
+                .HasForeignKey(e => e.AdminId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

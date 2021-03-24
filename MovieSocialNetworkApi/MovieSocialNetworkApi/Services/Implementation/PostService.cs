@@ -112,7 +112,8 @@ namespace MovieSocialNetworkApi.Services
                 {
                     Text = command.Text,
                     CreatedOn = DateTime.UtcNow,
-                    FilePath = filePath
+                    FilePath = filePath,
+                    Creator = authUser
                 };
 
                 _context.Contents.Add(post);

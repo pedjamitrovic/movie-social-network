@@ -105,6 +105,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == command.PostId);
                 if (post == null) throw new BusinessException($"Post with {command.PostId} not found");
 
@@ -112,7 +115,8 @@ namespace MovieSocialNetworkApi.Services
                 {
                     Text = command.Text,
                     CreatedOn = DateTime.UtcNow,
-                    Post = post
+                    Post = post,
+                    Creator = authUser
                 };
 
                 _context.Contents.Add(comment);

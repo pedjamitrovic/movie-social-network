@@ -1,11 +1,9 @@
 ﻿namespace MovieSocialNetworkApi.Models
 {
-    public class UserVM
+    public class UserVM: SystemEntityVM
     {
-        public int Id { get; set; }
-        public string Description { get; set; }
-        public string ProfileImagePath { get; set; }
-        public string CoverImagePath { get; set; }
+        public string Role { get; set; }
         public string Username { get; set; }
+        public string Email { get; set; }
     }
 }

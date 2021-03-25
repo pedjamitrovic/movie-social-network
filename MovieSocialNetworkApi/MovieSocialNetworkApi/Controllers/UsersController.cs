@@ -69,7 +69,7 @@ namespace MovieSocialNetworkApi.Controllers
             }
             catch (BusinessException e)
             {
-                return BadRequest(new { message = e.Message });
+                return BadRequest(new { message = e.Message, code = e.Code });
             }
             catch
             {
@@ -88,7 +88,7 @@ namespace MovieSocialNetworkApi.Controllers
             }
             catch (BusinessException e)
             {
-                return BadRequest(new { message = e.Message });
+                return BadRequest(new { message = e.Message, code = e.Code });
             }
             catch
             {

@@ -106,10 +106,10 @@ namespace MovieSocialNetworkApi.Services
             try
             {
                 var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Username == command.Username);
-                if (user != null) throw new BusinessException("User with provided username already exists");
+                if (user != null) throw new BusinessException("User with provided username already exists", BusinessErrorCode.UsernameAlreadyExists);
 
                 user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Email == command.Email);
-                if (user != null) throw new BusinessException("User with provided email already exists");
+                if (user != null) throw new BusinessException("User with provided email already exists", BusinessErrorCode.EmailAlreadyExists);
 
                 user = new User
                 {
@@ -159,11 +159,10 @@ namespace MovieSocialNetworkApi.Services
             {
                 var hashedPassword = PasswordHelper.SHA256(command.Password, _appSettings.PwSecret);
 
-                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(
-                    e => e.Username == command.Username && e.Password == hashedPassword
-                );
+                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Username == command.Username);
 
-                if (user == null) throw new BusinessException("Invalid username or password");
+                if (user == null) throw new BusinessException("Invalid username", BusinessErrorCode.InvalidUsername);
+                if (user.Password != hashedPassword) throw new BusinessException("Invalid password", BusinessErrorCode.InvalidPassword);
 
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);

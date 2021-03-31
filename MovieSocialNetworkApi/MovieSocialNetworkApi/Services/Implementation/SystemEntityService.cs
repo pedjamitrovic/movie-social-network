@@ -235,7 +235,7 @@ namespace MovieSocialNetworkApi.Services
                     await _context.Entry(relation).Reference(e => e.Follower).LoadAsync();
                 }
 
-                var followers = sysEntity.Followers.Select(e => e.Follower).AsQueryable();
+                var followers = sysEntity.Followers.Select(e => e.Follower);
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
@@ -244,13 +244,17 @@ namespace MovieSocialNetworkApi.Services
 
                 if (sorting.SortBy == "followers")
                 {
+                    foreach (var follower in followers)
+                    {
+                        await _context.Entry(follower).Collection(e => e.Followers).LoadAsync();
+                    }
                     if (sorting.SortOrder == SortOrder.Desc)
                     {
-                        followers = followers.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                        followers = followers.OrderByDescending((e) => e.Followers.Count);
                     }
                     else
                     {
-                        followers = followers.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                        followers = followers.OrderBy((e) => e.Followers.Count);
                     }
                 }
                 else
@@ -260,14 +264,14 @@ namespace MovieSocialNetworkApi.Services
 
                 var result = new PagedList<SystemEntityVM>
                 {
-                    TotalCount = await followers.CountAsync(),
+                    TotalCount = followers.Count(),
                     PageSize = paging.PageSize,
                     Page = paging.PageNumber,
                     SortBy = sorting.SortBy,
                     SortOrder = sorting.SortOrder,
                 };
 
-                var items = await followers.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                var items = followers.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToList();
                 result.Items = _mapper.Map<List<SystemEntity>, List<SystemEntityVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
@@ -292,7 +296,7 @@ namespace MovieSocialNetworkApi.Services
                     await _context.Entry(relation).Reference(e => e.Following).LoadAsync();
                 }
 
-                var following = sysEntity.Followers.Select(e => e.Following).AsQueryable();
+                var following = sysEntity.Following.Select(e => e.Following);
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
@@ -301,13 +305,17 @@ namespace MovieSocialNetworkApi.Services
 
                 if (sorting.SortBy == "followers")
                 {
+                    foreach (var followingSystemEntity in following)
+                    {
+                        await _context.Entry(followingSystemEntity).Collection(e => e.Followers).LoadAsync();
+                    }
                     if (sorting.SortOrder == SortOrder.Desc)
                     {
-                        following = following.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                        following = following.OrderByDescending((e) => e.Followers.Count);
                     }
                     else
                     {
-                        following = following.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                        following = following.OrderBy((e) => e.Followers.Count);
                     }
                 }
                 else
@@ -317,14 +325,14 @@ namespace MovieSocialNetworkApi.Services
 
                 var result = new PagedList<SystemEntityVM>
                 {
-                    TotalCount = await following.CountAsync(),
+                    TotalCount = following.Count(),
                     PageSize = paging.PageSize,
                     Page = paging.PageNumber,
                     SortBy = sorting.SortBy,
                     SortOrder = sorting.SortOrder,
                 };
 
-                var items = await following.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                var items = following.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToList();
                 result.Items = _mapper.Map<List<SystemEntity>, List<SystemEntityVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 

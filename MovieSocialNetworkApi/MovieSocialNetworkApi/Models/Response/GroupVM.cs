@@ -1,9 +1,8 @@
 ﻿namespace MovieSocialNetworkApi.Models
 {
-    public class GroupVM
+    public class GroupVM: SystemEntityVM
     {
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public string Role { get; set; }
+        public string Title { get; set; }
+        public string Subtitle { get; set; }
     }
 }

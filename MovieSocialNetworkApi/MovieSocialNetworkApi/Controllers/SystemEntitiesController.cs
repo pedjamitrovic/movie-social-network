@@ -89,15 +89,7 @@ namespace MovieSocialNetworkApi.Controllers
             try
             {
                 var followers = await _systemEntityService.GetFollowers(id, paging, sorting);
-                return Ok(
-                    JsonConvert.SerializeObject(
-                        followers,
-                        new JsonSerializerSettings
-                        {
-                            ContractResolver = new CamelCasePropertyNamesContractResolver()
-                        }
-                    )
-                );
+                return Ok(followers);
             }
             catch (BusinessException e)
             {
@@ -111,15 +103,7 @@ namespace MovieSocialNetworkApi.Controllers
             try
             {
                 var following = await _systemEntityService.GetFollowing(id, paging, sorting);
-                return Ok(
-                    JsonConvert.SerializeObject(
-                        following,
-                        new JsonSerializerSettings
-                        {
-                            ContractResolver = new CamelCasePropertyNamesContractResolver()
-                        }
-                    )
-                );
+                return Ok(following);
             }
             catch (BusinessException e)
             {

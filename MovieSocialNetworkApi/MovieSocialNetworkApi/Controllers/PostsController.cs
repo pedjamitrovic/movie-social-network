@@ -60,8 +60,8 @@ namespace MovieSocialNetworkApi.Controllers
             try
             {
                 var filePath = await _fileService.SaveFile(command.File);
-                await _postService.Create(filePath, command);
-                return Ok(filePath);
+                var result = await _postService.Create(filePath, command);
+                return Ok(result);
             }
             catch (BusinessException e)
             {

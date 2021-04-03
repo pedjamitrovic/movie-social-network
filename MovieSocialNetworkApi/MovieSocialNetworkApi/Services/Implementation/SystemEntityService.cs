@@ -87,7 +87,7 @@ namespace MovieSocialNetworkApi.Services
 
                 var ban = new Ban
                 {
-                    BannedFrom = DateTime.UtcNow,
+                    BannedFrom = DateTimeOffset.UtcNow,
                     BannedUntil = command.BannedUntil,
                     Reason = command.Reason,
                     BannedEntity = sysEntity

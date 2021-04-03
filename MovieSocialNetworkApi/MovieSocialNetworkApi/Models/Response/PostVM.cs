@@ -1,9 +1,7 @@
 ﻿namespace MovieSocialNetworkApi.Models
 {
-    public class PostVM
+    public class PostVM: ContentVM
     {
-        public int Id { get; set; }
-        public string Username { get; set; }
-        public string Role { get; set; }
+        public string FilePath { get; set; }
     }
 }

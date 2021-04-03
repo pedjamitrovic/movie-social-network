@@ -7,7 +7,7 @@ namespace MovieSocialNetworkApi.Models
     public class BanCommand
     {
         [Required]
-        public DateTime BannedUntil { get; set; }
+        public DateTimeOffset BannedUntil { get; set; }
         [Required]
         public string Reason { get; set; }
     }

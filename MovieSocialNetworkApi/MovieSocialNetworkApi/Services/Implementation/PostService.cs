@@ -6,6 +6,7 @@ using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var posts = _context.Contents.OfType<Post>().AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
@@ -78,6 +82,19 @@ namespace MovieSocialNetworkApi.Services
                 result.Items = _mapper.Map<List<Post>, List<PostVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
+                foreach (var postVM in result.Items)
+                {
+                    var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content.Id == postVM.Id);
+                    postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+
+                    postVM.ReactionStats = 
+                        _context.Reactions.Where(e => e.Content.Id == postVM.Id)
+                        .GroupBy(e => e.Value)
+                        .Select(g => new ReactionStats { Value = g.Key, Count = g.Count() })
+                        .OrderByDescending(e => e.Count)
+                        .ToList();
+                }
+
                 return result;
             }
             catch (Exception e)
@@ -91,8 +108,22 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == id);
-                return _mapper.Map<PostVM>(post);
+                var postVM = _mapper.Map<Post, PostVM>(post);
+
+                var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content == post);
+                postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+
+                postVM.ReactionStats = _context.Reactions.Where(e => e.Content == post)
+                    .GroupBy(e => e.Value)
+                    .Select(g => new ReactionStats{ Value = g.Key, Count = g.Count() })
+                    .OrderByDescending(e => e.Count)
+                    .ToList();
+
+                return postVM;
             }
             catch (Exception e)
             {
@@ -119,7 +150,7 @@ namespace MovieSocialNetworkApi.Services
                 var post = new Post
                 {
                     Text = command.Text,
-                    CreatedOn = DateTime.UtcNow,
+                    CreatedOn = DateTimeOffset.UtcNow,
                     FilePath = filePath,
                     Creator = authUser,
                     ForGroup = forGroup
@@ -129,6 +160,7 @@ namespace MovieSocialNetworkApi.Services
                 await _context.SaveChangesAsync();
 
                 return _mapper.Map<Post, PostVM>(post);
+
             }
             catch (Exception e)
             {

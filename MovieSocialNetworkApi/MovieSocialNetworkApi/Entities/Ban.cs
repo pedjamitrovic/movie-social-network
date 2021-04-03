@@ -8,8 +8,8 @@ namespace MovieSocialNetworkApi.Entities
     {
         [Key]
         public int Id { get; set; }
-        public DateTime BannedFrom { get; set; }
-        public DateTime BannedUntil { get; set; }
+        public DateTimeOffset BannedFrom { get; set; }
+        public DateTimeOffset BannedUntil { get; set; }
         public string Reason { get; set; }
         public virtual SystemEntity BannedEntity { get; set; }
         public virtual ICollection<Report> Reports { get; set; }

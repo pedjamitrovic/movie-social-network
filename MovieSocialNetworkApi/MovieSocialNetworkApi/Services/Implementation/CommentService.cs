@@ -6,6 +6,7 @@ using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +38,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var comments = _context.Contents.OfType<Comment>().AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
@@ -78,6 +82,20 @@ namespace MovieSocialNetworkApi.Services
                 result.Items = _mapper.Map<List<Comment>, List<CommentVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
+                foreach (var commentVM in result.Items)
+                {
+                    var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content.Id == commentVM.Id);
+                    commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+
+                    commentVM.ReactionStats =
+                        _context.Reactions.Where(e => e.Content.Id == commentVM.Id)
+                        .GroupBy(e => e.Value)
+                        .Select(g => new ReactionStats { Value = g.Key, Count = g.Count() })
+                        .OrderByDescending(e => e.Count)
+                        .ToList();
+                }
+
+
                 return result;
             }
             catch (Exception e)
@@ -91,8 +109,22 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authUser = await _auth.GetAuthenticatedUser();
+                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+
                 var comment = await _context.Contents.OfType<Comment>().SingleOrDefaultAsync(e => e.Id == id);
-                return _mapper.Map<CommentVM>(comment);
+                var commentVM = _mapper.Map<CommentVM>(comment);
+
+                var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content == comment);
+                commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+
+                commentVM.ReactionStats = _context.Reactions.Where(e => e.Content == comment)
+                    .GroupBy(e => e.Value)
+                    .Select(g => new ReactionStats { Value = g.Key, Count = g.Count() })
+                    .OrderByDescending(e => e.Count)
+                    .ToList();
+
+                return commentVM;
             }
             catch (Exception e)
             {
@@ -101,7 +133,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<CommentVM> Create(string filePath, CreateCommentCommand command)
+        public async Task<CommentVM> Create(CreateCommentCommand command)
         {
             try
             {
@@ -114,7 +146,7 @@ namespace MovieSocialNetworkApi.Services
                 var comment = new Comment
                 {
                     Text = command.Text,
-                    CreatedOn = DateTime.UtcNow,
+                    CreatedOn = DateTimeOffset.UtcNow,
                     Post = post,
                     Creator = authUser
                 };

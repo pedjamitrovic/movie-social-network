@@ -12,18 +12,15 @@ namespace MovieSocialNetworkApi.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    public class PostsController : Controller
+    public class CommentsController : Controller
     {
-        private readonly IPostService _postService;
-        private readonly IFileService _fileService;
+        private readonly ICommentService _commentService;
 
-        public PostsController(
-            IPostService postService,
-            IFileService fileService
+        public CommentsController(
+            ICommentService commentService
         )
         {
-            _postService = postService;
-            _fileService = fileService;
+            _commentService = commentService;
         }
 
         [HttpGet]
@@ -31,7 +28,7 @@ namespace MovieSocialNetworkApi.Controllers
         {
             try
             {
-                var result = await _postService.GetList(paging, sorting, q);
+                var result = await _commentService.GetList(paging, sorting, q);
                 return Ok(result);
             }
             catch (BusinessException e)
@@ -45,7 +42,7 @@ namespace MovieSocialNetworkApi.Controllers
         {
             try
             {
-                var result = await _postService.GetById(id);
+                var result = await _commentService.GetById(id);
                 return Ok(result);
             }
             catch (BusinessException e)
@@ -55,12 +52,11 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpPost, DisableRequestSizeLimit]
-        public async Task<IActionResult> Create([FromForm] CreatePostCommand command)
+        public async Task<IActionResult> Create(CreateCommentCommand command)
         {
             try
             {
-                var filePath = await _fileService.SaveFile(command.File);
-                var result = await _postService.Create(filePath, command);
+                var result = await _commentService.Create(command);
                 return Ok(result);
             }
             catch (BusinessException e)

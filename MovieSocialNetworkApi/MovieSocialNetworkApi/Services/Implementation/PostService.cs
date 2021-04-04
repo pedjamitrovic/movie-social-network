@@ -34,18 +34,28 @@ namespace MovieSocialNetworkApi.Services
             _auth = auth;
         }
 
-        public async Task<PagedList<PostVM>> GetList(Paging paging, Sorting sorting, string q)
+        public async Task<PagedList<PostVM>> GetList(Paging paging, Sorting sorting, string q, int? creatorId, int? followerId)
         {
             try
             {
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
-                var posts = _context.Contents.OfType<Post>().AsQueryable();
+                var posts = _context.Contents.OfType<Post>().Include(e => e.Creator).ThenInclude(e => e.Followers).AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
                 {
                     posts = posts.Where((e) => e.Text.ToLower().Contains(q.ToLower()));
+                }
+
+                if (creatorId != null)
+                {
+                    posts = posts.Where((e) => e.Creator.Id == creatorId);
+                }
+
+                if (followerId != null)
+                {
+                    posts = posts.Where((e) => e.Creator.Id == followerId || e.Creator.Followers.Any((f) => f.FollowerId == followerId));
                 }
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))

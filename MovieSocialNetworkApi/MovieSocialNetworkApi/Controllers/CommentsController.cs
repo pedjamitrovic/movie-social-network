@@ -24,11 +24,11 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetList([FromQuery] Paging paging, [FromQuery] Sorting sorting, [FromQuery] string q)
+        public async Task<IActionResult> GetList([FromQuery] Paging paging, [FromQuery] Sorting sorting, [FromQuery] string q, [FromQuery] int? creatorId, [FromQuery] int? postId)
         {
             try
             {
-                var result = await _commentService.GetList(paging, sorting, q);
+                var result = await _commentService.GetList(paging, sorting, q, creatorId, postId);
                 return Ok(result);
             }
             catch (BusinessException e)

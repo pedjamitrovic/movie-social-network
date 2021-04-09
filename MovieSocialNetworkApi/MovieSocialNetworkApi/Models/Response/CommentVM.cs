@@ -2,6 +2,6 @@
 {
     public class CommentVM: ContentVM
     {
-        public PostVM Post { get; set; }
+        public int PostId { get; set; }
     }
 }

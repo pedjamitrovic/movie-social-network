@@ -34,18 +34,28 @@ namespace MovieSocialNetworkApi.Services
             _auth = auth;
         }
 
-        public async Task<PagedList<CommentVM>> GetList(Paging paging, Sorting sorting, string q)
+        public async Task<PagedList<CommentVM>> GetList(Paging paging, Sorting sorting, string q, int? creatorId, int? postId)
         {
             try
             {
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
-                var comments = _context.Contents.OfType<Comment>().AsQueryable();
+                var comments = _context.Contents.OfType<Comment>().Include(e => e.Creator).Include(e => e.Post).AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
                 {
                     comments = comments.Where((e) => e.Text.ToLower().Contains(q.ToLower()));
+                }
+
+                if (creatorId != null)
+                {
+                    comments = comments.Where((e) => e.Creator.Id == creatorId);
+                }
+
+                if (postId != null)
+                {
+                    comments = comments.Where((e) => e.Post.Id == postId);
                 }
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
@@ -85,8 +95,8 @@ namespace MovieSocialNetworkApi.Services
                 foreach (var commentVM in result.Items)
                 {
                     var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content.Id == commentVM.Id);
-                    commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
-
+                    if (existingReaction != null) commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+                    
                     commentVM.ReactionStats =
                         _context.Reactions.Where(e => e.Content.Id == commentVM.Id)
                         .GroupBy(e => e.Value)
@@ -112,11 +122,11 @@ namespace MovieSocialNetworkApi.Services
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
-                var comment = await _context.Contents.OfType<Comment>().SingleOrDefaultAsync(e => e.Id == id);
+                var comment = await _context.Contents.OfType<Comment>().Include(e => e.Creator).Include(e => e.Post).SingleOrDefaultAsync(e => e.Id == id);
                 var commentVM = _mapper.Map<CommentVM>(comment);
 
                 var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content == comment);
-                commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+                if (existingReaction != null) commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
 
                 commentVM.ReactionStats = _context.Reactions.Where(e => e.Content == comment)
                     .GroupBy(e => e.Value)

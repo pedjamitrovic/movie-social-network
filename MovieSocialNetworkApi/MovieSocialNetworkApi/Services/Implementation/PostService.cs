@@ -95,7 +95,7 @@ namespace MovieSocialNetworkApi.Services
                 foreach (var postVM in result.Items)
                 {
                     var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content.Id == postVM.Id);
-                    postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+                    if (existingReaction != null) postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
 
                     postVM.ReactionStats = 
                         _context.Reactions.Where(e => e.Content.Id == postVM.Id)
@@ -121,11 +121,11 @@ namespace MovieSocialNetworkApi.Services
                 var authUser = await _auth.GetAuthenticatedUser();
                 if (authUser == null) throw new BusinessException($"Authenticated user not found");
 
-                var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == id);
+                var post = await _context.Contents.OfType<Post>().Include(e => e.Creator).SingleOrDefaultAsync(e => e.Id == id);
                 var postVM = _mapper.Map<Post, PostVM>(post);
 
                 var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content == post);
-                postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
+                if (existingReaction != null) postVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
 
                 postVM.ReactionStats = _context.Reactions.Where(e => e.Content == post)
                     .GroupBy(e => e.Value)

@@ -15,19 +15,13 @@ namespace MovieSocialNetworkApi.Controllers
     [Route("[controller]")]
     public class UsersController : Controller
     {
-        private readonly ISystemEntityService _systemEntityService;
         private readonly IUserService _userService;
-        private readonly IFileService _fileService;
 
         public UsersController(
-            ISystemEntityService systemEntityService,
-            IUserService userService,
-            IFileService fileService
+            IUserService userService
         )
         {
-            _fileService = fileService;
             _userService = userService;
-            _systemEntityService = systemEntityService;
         }
 
         [HttpGet]
@@ -93,81 +87,6 @@ namespace MovieSocialNetworkApi.Controllers
             catch
             {
                 return BadRequest();
-            }
-        }
-
-        [HttpPut("{id}/follow")]
-        public async Task<IActionResult> Follow(int id)
-        {
-            try
-            {
-                await _systemEntityService.Follow(id);
-                return Ok();
-            }
-            catch (BusinessException e)
-            {
-                return BadRequest(new { message = e.Message });
-            }
-        }
-
-        [HttpPut("{id}/unfollow")]
-        public async Task<IActionResult> Unfollow(int id)
-        {
-            try
-            {
-                await _systemEntityService.Unfollow(id);
-                return Ok();
-            }
-            catch (BusinessException e)
-            {
-                return BadRequest(new { message = e.Message });
-            }
-        }
-
-        [HttpGet("{id}/followers")]
-        public async Task<IActionResult> GetFollowers(int id, [FromQuery] Paging paging, [FromQuery] Sorting sorting)
-        {
-            try
-            {
-                var followers = await _systemEntityService.GetFollowers(id, paging, sorting);
-                return Ok(followers);
-            }
-            catch (BusinessException e)
-            {
-                return BadRequest(new { message = e.Message });
-            }
-        }
-
-        [HttpGet("{id}/following")]
-        public async Task<IActionResult> GetFollowing(int id, [FromQuery] Paging paging, [FromQuery] Sorting sorting)
-        {
-            try
-            {
-                var following = await _systemEntityService.GetFollowing(id, paging, sorting);
-                return Ok(following);
-            }
-            catch (BusinessException e)
-            {
-                return BadRequest(new { message = e.Message });
-            }
-        }
-
-        [HttpPost("{id}/image/{type}"), DisableRequestSizeLimit]
-        public async Task<IActionResult> ChangeImage(int id, string type, [FromForm] IFormFile file)
-        {
-            try
-            {
-                var filePath = await _fileService.SaveFile(file);
-                await _systemEntityService.ChangeImage(id, type, filePath);
-                return Ok(filePath);
-            }
-            catch (BusinessException e)
-            {
-                return BadRequest(new { message = e.Message });
-            }
-            catch (ForbiddenException)
-            {
-                return Forbid();
             }
         }
     }

@@ -27,34 +27,6 @@ namespace MovieSocialNetworkApi.Controllers
             _systemEntityService = systemEntityService;
         }
 
-        //[HttpGet]
-        //public async Task<IActionResult> GetList([FromQuery] Paging paging, [FromQuery] Sorting sorting, [FromQuery] string q)
-        //{
-        //    try
-        //    {
-        //        var result = await _systemEntityService.GetList(paging, sorting, q);
-        //        return Ok(result);
-        //    }
-        //    catch (BusinessException e)
-        //    {
-        //        return BadRequest(new { message = e.Message });
-        //    }
-        //    catch
-        //    {
-        //        return BadRequest();
-        //    }
-        //}
-
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetById(int id)
-        //{
-        //    var user = await _systemEntityService.GetById(id);
-
-        //    if (user == null) return NotFound();
-
-        //    return Ok(user);
-        //}
-
         [HttpPut("{id}/follow")]
         public async Task<IActionResult> Follow(int id)
         {

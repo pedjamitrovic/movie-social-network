@@ -58,6 +58,11 @@ namespace MovieSocialNetworkApi.Services
             {
                 var users = _context.SystemEntities.OfType<User>().AsQueryable();
 
+                if (!string.IsNullOrEmpty(q))
+                {
+                    users = users.Where((e) => e.Username.ToLower().Contains(q.ToLower()) || e.Description.ToLower().Contains(q.ToLower()));
+                }
+
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {
                     sorting.SortBy = "followers";

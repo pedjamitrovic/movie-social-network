@@ -42,24 +42,24 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
-                if (authUser.Id == id) throw new ForbiddenException($"User has no permission to report himself");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+                if (authSystemEntity.Id == id) throw new ForbiddenException($"User has no permission to report himself");
 
                 var sysEntity = await _context.SystemEntities.Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
 
-                var existingReport = sysEntity.ReportedReports.ToList().Find(e => e.ReporterId == authUser.Id);
+                var existingReport = sysEntity.ReportedReports.ToList().Find(e => e.ReporterId == authSystemEntity.Id);
 
                 if (existingReport != null)
                 {
-                    throw new BusinessException($"User {sysEntity.Id} already has active report by user {authUser.Id}");
+                    throw new BusinessException($"User {sysEntity.Id} already has active report by user {authSystemEntity.Id}");
                 }
 
                 var report = new Report
                 {
                     Reason = command.Reason,
-                    ReporterId = authUser.Id,
+                    ReporterId = authSystemEntity.Id,
                     ReportedSystemEntityId = sysEntity.Id
                 };
 
@@ -78,9 +78,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
-                if (authUser.Role != Role.Admin) throw new ForbiddenException($"User has no permission to ban user with id {id}");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+                if (authSystemEntity.Role != Role.Admin) throw new ForbiddenException($"User has no permission to ban user with id {id}");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
@@ -107,9 +107,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"User not found");
-                if (authUser.Id != id) throw new ForbiddenException($"User has no permission to change image of user with id {id}");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"User not found");
+                if (authSystemEntity.Id != id) throw new ForbiddenException($"User has no permission to change image of user with id {id}");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
@@ -139,8 +139,8 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
@@ -163,15 +163,15 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"User not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"User not found");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
 
                 var relation = new Relation
                 {
-                    FollowerId = authUser.Id,
+                    FollowerId = authSystemEntity.Id,
                     FollowingId = sysEntity.Id,
                 };
 
@@ -195,15 +195,15 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
 
                 var relation = new Relation
                 {
-                    FollowerId = authUser.Id,
+                    FollowerId = authSystemEntity.Id,
                     FollowingId = sysEntity.Id,
                 };
 

@@ -28,13 +28,13 @@ namespace MovieSocialNetworkApi.Services
             _logger = logger;
         }
 
-        public async Task<User> GetAuthenticatedUser()
+        public async Task<SystemEntity> GetAuthenticatedSystemEntity()
         {
             try
             {
                 if (UserId == null) { return null; }
-                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
-                return user;
+                var systemEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
+                return systemEntity;
             }
             catch (Exception e)
             {

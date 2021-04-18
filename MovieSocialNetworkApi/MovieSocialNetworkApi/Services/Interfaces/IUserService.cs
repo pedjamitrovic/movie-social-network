@@ -8,7 +8,7 @@ namespace MovieSocialNetworkApi.Services
     {
         Task<UserVM> GetById(int id);
         Task<PagedList<UserVM>> GetList(Paging paging, Sorting sorting, string q);
-        Task<AuthenticatedUser> Register(RegisterCommand command);
-        Task<AuthenticatedUser> Login(LoginCommand command);
+        Task<AuthenticationInfo> Register(RegisterCommand command);
+        Task<AuthenticationInfo> Login(LoginCommand command);
     }
 }

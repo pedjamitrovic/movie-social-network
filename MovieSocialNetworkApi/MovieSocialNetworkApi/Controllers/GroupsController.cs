@@ -45,11 +45,47 @@ namespace MovieSocialNetworkApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var user = await _groupService.GetById(id);
+            var group = await _groupService.GetById(id);
 
-            if (user == null) return NotFound();
+            if (group == null) return NotFound();
 
-            return Ok(user);
+            return Ok(group);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateGroupCommand command)
+        {
+            try
+            {
+                var group = await _groupService.Create(command);
+                return Ok(group);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
+
+        [HttpPost("{id}/login")]
+        public async Task<IActionResult> Login(int id)
+        {
+            try
+            {
+                var group = await _groupService.Login(id);
+                return Ok(group);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
     }
 }

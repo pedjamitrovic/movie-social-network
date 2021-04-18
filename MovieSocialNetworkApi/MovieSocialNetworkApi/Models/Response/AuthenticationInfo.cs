@@ -1,10 +1,10 @@
 ﻿namespace MovieSocialNetworkApi.Models
 {
-    public class AuthenticatedUser
+    public class AuthenticationInfo
     {
         public int Id { get; set; }
-        public string Username { get; set; }
-        public string Role { get; set; }
+        public string QualifiedName { get; set; }
+        public string Discriminator { get; set; }
         public string Token { get; set; }
     }
 }

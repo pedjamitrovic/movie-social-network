@@ -10,7 +10,6 @@ namespace MovieSocialNetworkApi.Entities
 {
     public class User: SystemEntity
     {
-        public string Role { get; set; }
         [MinLength(3)]
         public string Username { get; set; }
         public string Password { get; set; }

@@ -38,8 +38,8 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var comments = _context.Contents.OfType<Comment>().Include(e => e.Creator).Include(e => e.Post).AsQueryable();
 
@@ -94,7 +94,7 @@ namespace MovieSocialNetworkApi.Services
 
                 foreach (var commentVM in result.Items)
                 {
-                    var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content.Id == commentVM.Id);
+                    var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authSystemEntity && e.Content.Id == commentVM.Id);
                     if (existingReaction != null) commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
                     
                     commentVM.ReactionStats =
@@ -119,13 +119,13 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var comment = await _context.Contents.OfType<Comment>().Include(e => e.Creator).Include(e => e.Post).SingleOrDefaultAsync(e => e.Id == id);
                 var commentVM = _mapper.Map<CommentVM>(comment);
 
-                var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authUser && e.Content == comment);
+                var existingReaction = await _context.Reactions.SingleOrDefaultAsync(e => e.Owner == authSystemEntity && e.Content == comment);
                 if (existingReaction != null) commentVM.ExistingReaction = _mapper.Map<ReactionVM>(existingReaction);
 
                 commentVM.ReactionStats = _context.Reactions.Where(e => e.Content == comment)
@@ -147,8 +147,8 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == command.PostId);
                 if (post == null) throw new BusinessException($"Post with {command.PostId} not found");
@@ -158,7 +158,7 @@ namespace MovieSocialNetworkApi.Services
                     Text = command.Text,
                     CreatedOn = DateTimeOffset.UtcNow,
                     Post = post,
-                    Creator = authUser
+                    Creator = authSystemEntity
                 };
 
                 _context.Contents.Add(comment);

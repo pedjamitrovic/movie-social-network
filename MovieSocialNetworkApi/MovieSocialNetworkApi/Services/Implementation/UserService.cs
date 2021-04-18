@@ -106,7 +106,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<AuthenticatedUser> Register(RegisterCommand command)
+        public async Task<AuthenticationInfo> Register(RegisterCommand command)
         {
             try
             {
@@ -128,7 +128,7 @@ namespace MovieSocialNetworkApi.Services
                 _context.SystemEntities.Add(user);
                 await _context.SaveChangesAsync();
 
-                var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
+                var authenticatedUser = _mapper.Map<AuthenticationInfo>(user);
 
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
@@ -158,7 +158,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<AuthenticatedUser> Login(LoginCommand command)
+        public async Task<AuthenticationInfo> Login(LoginCommand command)
         {
             try
             {
@@ -177,8 +177,7 @@ namespace MovieSocialNetworkApi.Services
                     Subject = new ClaimsIdentity(
                         new Claim[]
                         {
-                            new Claim(ClaimTypes.Name, user.Id.ToString()),
-                            new Claim(ClaimTypes.Role, user.Role)
+                            new Claim(ClaimTypes.Name, user.Id.ToString())
                         }
                     ),
                     Expires = DateTime.UtcNow.AddDays(2),
@@ -187,7 +186,7 @@ namespace MovieSocialNetworkApi.Services
 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
-                var authenticatedUser = _mapper.Map<AuthenticatedUser>(user);
+                var authenticatedUser = _mapper.Map<AuthenticationInfo>(user);
                 authenticatedUser.Token = tokenHandler.WriteToken(token);
 
                 return authenticatedUser;

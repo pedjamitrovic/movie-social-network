@@ -21,12 +21,14 @@ namespace MovieSocialNetworkApi.Services
     public class GroupService : IGroupService
     {
         private readonly MovieSocialNetworkDbContext _context;
+        private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
 
         public GroupService(
             MovieSocialNetworkDbContext context,
+            IOptions<AppSettings> appSettings,
             IMapper mapper,
             ILogger<UserService> logger,
             IAuthService auth
@@ -36,6 +38,7 @@ namespace MovieSocialNetworkApi.Services
             _logger = logger;
             _context = context;
             _auth = auth;
+            _appSettings = appSettings.Value;
         }
 
         public async Task<GroupVM> GetById(int id)
@@ -115,11 +118,11 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var group = await _context.SystemEntities.OfType<Group>().SingleOrDefaultAsync(e => e.Title == command.Title);
-                if (group != null) throw new BusinessException("Group with provided title already exists");
+                if (group != null) throw new BusinessException("Group with provided title already exists", BusinessErrorCode.TitleAlreadyExists);
 
                 group = new Group
                 {
@@ -134,7 +137,7 @@ namespace MovieSocialNetworkApi.Services
                 var groupAdmin = new GroupAdmin
                 {
                     Group = group,
-                    Admin = authUser
+                    Admin = authSystemEntity as User
                 };
 
                 _context.GroupAdmins.Add(groupAdmin);
@@ -142,6 +145,47 @@ namespace MovieSocialNetworkApi.Services
                 await _context.SaveChangesAsync();
 
                 return _mapper.Map<GroupVM>(group);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<AuthenticationInfo> Login(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var groupAdmin = await _context.GroupAdmins.Include(e => e.Group)
+                    .Where(e => e.AdminId == authSystemEntity.Id && e.GroupId == id)
+                    .SingleOrDefaultAsync();
+                if (groupAdmin == null) throw new BusinessException($"Authenticated user is not admin of group with {id}", BusinessErrorCode.NotAdmin);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
+
+                var tokenDescriptor = new SecurityTokenDescriptor
+                {
+                    Subject = new ClaimsIdentity(
+                        new Claim[]
+                        {
+                            new Claim(ClaimTypes.Name, groupAdmin.Group.Id.ToString())
+                        }
+                    ),
+                    Expires = DateTime.UtcNow.AddDays(2),
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                };
+
+                var token = tokenHandler.CreateToken(tokenDescriptor);
+
+                var authenticatedUser = _mapper.Map<AuthenticationInfo>(groupAdmin.Group);
+                authenticatedUser.Token = tokenHandler.WriteToken(token);
+
+                return authenticatedUser;
             }
             catch (Exception e)
             {

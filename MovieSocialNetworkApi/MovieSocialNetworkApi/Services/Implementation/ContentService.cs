@@ -42,18 +42,18 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var content = await _context.Contents.Include(e => e.Reactions).ThenInclude(e => e.Owner).SingleOrDefaultAsync(e => e.Id == id);
                 if (content == null) throw new BusinessException($"Content with {id} not found");
 
-                var existingReaction = content.Reactions.ToList().Find(e => e.Owner.Id == authUser.Id);
+                var existingReaction = content.Reactions.ToList().Find(e => e.Owner.Id == authSystemEntity.Id);
 
                 var reaction = new Reaction
                 {
                     Value = command.Value,
-                    Owner = authUser,
+                    Owner = authSystemEntity,
                     Content = content
                 };
 
@@ -71,24 +71,24 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
-                if (authUser.Id == id) throw new ForbiddenException($"User has no permission to report his posts");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+                if (authSystemEntity.Id == id) throw new ForbiddenException($"User has no permission to report his posts");
 
                 var post = await _context.Contents.OfType<Post>().Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
                 if (post == null) throw new BusinessException($"Post with {id} not found");
 
-                var existingReport = post.ReportedReports.ToList().Find(e => e.ReporterId == authUser.Id);
+                var existingReport = post.ReportedReports.ToList().Find(e => e.ReporterId == authSystemEntity.Id);
 
                 if (existingReport != null)
                 {
-                    throw new BusinessException($"Post {post.Id} already has active report by user {authUser.Id}");
+                    throw new BusinessException($"Post {post.Id} already has active report by user {authSystemEntity.Id}");
                 }
 
                 var report = new Report
                 {
                     Reason = command.Reason,
-                    Reporter = authUser,
+                    Reporter = authSystemEntity,
                     ReportedContent = post,
                 };
 
@@ -107,13 +107,13 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authUser = await _auth.GetAuthenticatedUser();
-                if (authUser == null) throw new BusinessException($"Authenticated user not found");
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var post = await _context.Contents.OfType<Post>().Include(e => e.Creator).Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
                 if (post == null) throw new BusinessException($"Post with {id} not found");
 
-                if (authUser.Id != post.Creator.Id && authUser.Role != Role.Admin) throw new ForbiddenException($"User has no permission to delete post with id {id}");
+                if (authSystemEntity.Id != post.Creator.Id && authSystemEntity.Role != Role.Admin) throw new ForbiddenException($"User has no permission to delete post with id {id}");
                 if (post.ReportedReports.Count >= _appSettings.MinReportsCount) throw new ForbiddenException($"Post can't be deleted as it's currently being reviewed because users have reported it multiple times");
 
                 _context.Contents.Remove(post);

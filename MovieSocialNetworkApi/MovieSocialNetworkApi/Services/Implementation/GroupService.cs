@@ -45,8 +45,13 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var group = await _context.SystemEntities.OfType<Group>().SingleOrDefaultAsync(e => e.Id == id);
-                return _mapper.Map<GroupVM>(group);
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var group = await _context.SystemEntities.OfType<Group>().Include(e => e.GroupAdmin).SingleOrDefaultAsync(e => e.Id == id);
+                var groupVM = _mapper.Map<GroupVM>(group);
+                groupVM.IsAuthUserAdmin = group.GroupAdmin.Any(e => e.AdminId == authSystemEntity.Id);
+                return groupVM;
             }
             catch (Exception e)
             {
@@ -59,14 +64,17 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var groups = _context.SystemEntities.OfType<Group>().AsQueryable();
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var groups = _context.SystemEntities.OfType<Group>().Include(e => e.GroupAdmin).AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
                 {
                     groups = groups.Where(
-                        (e) => 
+                        (e) =>
                         e.Title.ToLower().Contains(q.ToLower()) ||
-                        e.Subtitle.ToLower().Contains(q.ToLower()) || 
+                        e.Subtitle.ToLower().Contains(q.ToLower()) ||
                         e.Description.ToLower().Contains(q.ToLower())
                     );
                 }
@@ -105,6 +113,11 @@ namespace MovieSocialNetworkApi.Services
                 result.Items = _mapper.Map<List<Group>, List<GroupVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
+                for (int i = 0; i < items.Count; i++)
+                {
+                    result.Items[i].IsAuthUserAdmin = items[i].GroupAdmin.Any(e => e.AdminId == authSystemEntity.Id);
+                }
+
                 return result;
             }
             catch (Exception e)
@@ -129,7 +142,7 @@ namespace MovieSocialNetworkApi.Services
                     Title = command.Title,
                     Subtitle = command.Subtitle,
                     Description = string.Empty,
-                   
+
                 };
 
                 _context.SystemEntities.Add(group);

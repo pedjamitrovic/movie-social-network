@@ -60,7 +60,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<PagedList<GroupVM>> GetList(Paging paging, Sorting sorting, string q)
+        public async Task<PagedList<GroupVM>> GetList(Paging paging, Sorting sorting, string q, int? followerId, int? adminId)
         {
             try
             {
@@ -77,6 +77,16 @@ namespace MovieSocialNetworkApi.Services
                         e.Subtitle.ToLower().Contains(q.ToLower()) ||
                         e.Description.ToLower().Contains(q.ToLower())
                     );
+                }
+
+                if (followerId != null)
+                {
+                    groups = groups.Include((e) => e.Followers).Where(e => e.Followers.Any(f => f.FollowerId == followerId));
+                }
+
+                if (adminId != null)
+                {
+                    groups = groups.Include((e) => e.GroupAdmin).Where(e => e.GroupAdmin.Any(ga => ga.AdminId == adminId));
                 }
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))

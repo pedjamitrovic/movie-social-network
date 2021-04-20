@@ -6,7 +6,7 @@ namespace MovieSocialNetworkApi.Services
     public interface IGroupService
     {
         Task<GroupVM> GetById(int id);
-        Task<PagedList<GroupVM>> GetList(Paging paging, Sorting sorting, string q);
+        Task<PagedList<GroupVM>> GetList(Paging paging, Sorting sorting, string q, int? followerId, int? adminId);
         Task<GroupVM> Create(CreateGroupCommand command);
         Task<AuthenticationInfo> Login(int id);
     }

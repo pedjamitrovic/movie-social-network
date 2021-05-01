@@ -162,9 +162,14 @@ namespace MovieSocialNetworkApi.Services
                 };
 
                 _context.Contents.Add(comment);
+
                 await _context.SaveChangesAsync();
 
-                return _mapper.Map<Comment, CommentVM>(comment);
+                var commentVM = _mapper.Map<Comment, CommentVM>(comment);
+
+                commentVM.ReactionStats = new List<ReactionStats>();
+
+                return commentVM;
             }
             catch (Exception e)
             {

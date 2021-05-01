@@ -169,7 +169,11 @@ namespace MovieSocialNetworkApi.Services
                 _context.Contents.Add(post);
                 await _context.SaveChangesAsync();
 
-                return _mapper.Map<Post, PostVM>(post);
+                var postVM = _mapper.Map<Post, PostVM>(post);
+
+                postVM.ReactionStats = new List<ReactionStats>();
+
+                return postVM;
 
             }
             catch (Exception e)

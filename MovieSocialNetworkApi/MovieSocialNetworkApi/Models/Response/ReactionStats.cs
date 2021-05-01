@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using static MovieSocialNetworkApi.Helpers.Enumerations;
 
 namespace MovieSocialNetworkApi.Models.Response
 {
     public class ReactionStats
     {
-        public int Value { get; set; }
+        public ReactionType Value { get; set; }
         public int Count { get; set; }
     }
 }

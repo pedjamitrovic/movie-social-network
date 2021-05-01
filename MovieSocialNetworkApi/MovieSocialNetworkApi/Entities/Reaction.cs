@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using static MovieSocialNetworkApi.Helpers.Enumerations;
 
 namespace MovieSocialNetworkApi.Entities
 {
@@ -7,7 +7,7 @@ namespace MovieSocialNetworkApi.Entities
     {
         [Key]
         public int Id { get; set; }
-        public int Value { get; set; }
+        public ReactionType Value { get; set; }
         public virtual SystemEntity Owner { get; set; }
         public virtual Content Content { get; set; }
     }

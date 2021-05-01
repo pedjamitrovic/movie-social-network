@@ -38,7 +38,7 @@ namespace MovieSocialNetworkApi.Services
             _appSettings = appSettings.Value;
         }
 
-        public async Task React(int id, CreateReactionCommand command)
+        public async Task<ReactionVM> React(int id, CreateReactionCommand command)
         {
             try
             {
@@ -50,20 +50,34 @@ namespace MovieSocialNetworkApi.Services
 
                 var existingReaction = content.Reactions.ToList().Find(e => e.Owner.Id == authSystemEntity.Id);
 
-                var reaction = new Reaction
+                if (existingReaction != null)
                 {
-                    Value = command.Value,
-                    Owner = authSystemEntity,
-                    Content = content
-                };
+                    existingReaction.Value = command.Value;
 
-                _context.Reactions.Add(reaction);
+                    _context.Reactions.Update(existingReaction);
+                }
+                else
+                {
+                    var reaction = new Reaction
+                    {
+                        Value = command.Value,
+                        Owner = authSystemEntity,
+                        Content = content
+                    };
+
+                    _context.Reactions.Add(reaction);
+
+                    existingReaction = reaction;
+                }
 
                 await _context.SaveChangesAsync();
+
+                return _mapper.Map<ReactionVM>(existingReaction);
             }
             catch (Exception e)
             {
                 _logger.LogError(e.ToString());
+                throw;
             }
         }
 

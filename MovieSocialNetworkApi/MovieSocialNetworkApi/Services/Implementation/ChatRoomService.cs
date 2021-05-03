@@ -204,8 +204,6 @@ namespace MovieSocialNetworkApi.Services
 
                 _context.Messages.Add(message);
 
-                chatRoomMembership.ChatRoom.NewestMessage = message;
-
                 await _context.SaveChangesAsync();
 
                 var messageVM = _mapper.Map<MessageVM>(message);

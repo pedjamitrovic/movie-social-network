@@ -152,7 +152,7 @@ namespace MovieSocialNetworkApi.Services
                     Title = command.Title,
                     Subtitle = command.Subtitle,
                     Description = string.Empty,
-
+                    Role = Role.User
                 };
 
                 _context.SystemEntities.Add(group);

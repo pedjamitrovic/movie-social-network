@@ -10,6 +10,5 @@ namespace MovieSocialNetworkApi.Entities
         public int Id { get; set; }
         public virtual ICollection<ChatRoomMembership> Memberships { get; set; }
         public virtual ICollection<Message> Messages { get; set; }
-        public virtual Message NewestMessage { get; set; }
     }
 }

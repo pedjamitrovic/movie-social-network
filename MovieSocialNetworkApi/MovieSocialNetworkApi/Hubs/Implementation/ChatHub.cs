@@ -20,6 +20,7 @@ namespace MovieSocialNetworkApi.Hubs
             var messageVM = new MessageVM
             {
                 Id = command.ChatRoomId,
+                SenderId = Int32.Parse(Context.User.Identity.Name),
                 ChatRoomId = chatRoom.Id,
                 CreatedOn = DateTimeOffset.UtcNow,
                 Delivered = false,

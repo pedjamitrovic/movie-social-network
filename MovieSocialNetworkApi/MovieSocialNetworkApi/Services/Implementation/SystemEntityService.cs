@@ -26,7 +26,7 @@ namespace MovieSocialNetworkApi.Services
         public SystemEntityService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<UserService> logger,
+            ILogger<SystemEntityService> logger,
             IAuthService auth,
             IOptions<AppSettings> appSettings
         )

@@ -16,6 +16,9 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<Reaction> Reactions { get; set; }
         public DbSet<Relation> Relations { get; set; }
         public DbSet<GroupAdmin> GroupAdmins { get; set; }
+        public DbSet<ChatRoom> ChatRooms { get; set; }
+        public DbSet<ChatRoomMembership> ChatRoomMemberships { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -59,6 +62,21 @@ namespace MovieSocialNetworkApi.Database
                 .HasOne(e => e.Admin)
                 .WithMany(e => e.GroupAdmin)
                 .HasForeignKey(e => e.AdminId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatRoomMembership>()
+                .HasKey(e => new { e.ChatRoomId, e.MemberId });
+
+            modelBuilder.Entity<ChatRoomMembership>()
+                .HasOne(e => e.ChatRoom)
+                .WithMany(e => e.Memberships)
+                .HasForeignKey(e => e.ChatRoomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ChatRoomMembership>()
+                .HasOne(e => e.Member)
+                .WithMany(e => e.ChatRoomMemberships)
+                .HasForeignKey(e => e.MemberId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

@@ -27,6 +27,7 @@ namespace MovieSocialNetworkApi
             CreateMap<PostVM, Post>().ReverseMap();
             CreateMap<CommentVM, Comment>().ReverseMap();
             CreateMap<ReactionVM, Reaction>().ReverseMap();
+            CreateMap<MessageVM, Message>().ReverseMap();
         }
     }
 }

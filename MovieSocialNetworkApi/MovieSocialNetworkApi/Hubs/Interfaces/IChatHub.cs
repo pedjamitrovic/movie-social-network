@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using MovieSocialNetworkApi.Models;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Hubs
 {
     public interface IChatHub
     {
-        Task SendMessage(int receiverId, string message);
-        Task ReceiveMessage(string message);
+        Task SendMessage(CreateMessageCommand command);
+        Task ReceiveMessage(MessageVM messageVM);
     }
 }

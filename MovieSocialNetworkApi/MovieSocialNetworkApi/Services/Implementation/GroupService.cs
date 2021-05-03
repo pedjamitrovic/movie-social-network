@@ -30,7 +30,7 @@ namespace MovieSocialNetworkApi.Services
             MovieSocialNetworkDbContext context,
             IOptions<AppSettings> appSettings,
             IMapper mapper,
-            ILogger<UserService> logger,
+            ILogger<GroupService> logger,
             IAuthService auth
         )
         {

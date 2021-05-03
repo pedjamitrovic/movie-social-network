@@ -20,6 +20,7 @@ namespace MovieSocialNetworkApi.Entities
         public virtual ICollection<Report> ReporterReports { get; set; }
         public virtual ICollection<Report> ReportedReports { get; set; }
         public virtual ICollection<Ban> Bans { get; set; }
+        public virtual ICollection<ChatRoomMembership> ChatRoomMemberships { get; set; }
         public abstract ReportedDetails GetReportedDetails();
     }
 }

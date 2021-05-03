@@ -24,7 +24,7 @@ namespace MovieSocialNetworkApi.Services
         public CommentService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<PostService> logger,
+            ILogger<CommentService> logger,
             IAuthService auth
         )
         {

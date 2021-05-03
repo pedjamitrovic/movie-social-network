@@ -26,7 +26,7 @@ namespace MovieSocialNetworkApi.Services
         public ContentService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<PostService> logger,
+            ILogger<ContentService> logger,
             IAuthService auth,
             IOptions<AppSettings> appSettings
         )

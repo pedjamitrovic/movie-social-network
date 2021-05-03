@@ -11,7 +11,7 @@ namespace MovieSocialNetworkApi.Services
         private readonly ILogger _logger;
 
         public FileService(
-            ILogger<AuthService> logger
+            ILogger<FileService> logger
         )
         {
             _logger = logger;

@@ -139,6 +139,7 @@ namespace MovieSocialNetworkApi.Services
                         new Claim[]
                         {
                             new Claim(ClaimTypes.Name, user.Id.ToString()),
+                            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                             new Claim(ClaimTypes.Role, user.Role)
                         }
                     ),
@@ -177,7 +178,9 @@ namespace MovieSocialNetworkApi.Services
                     Subject = new ClaimsIdentity(
                         new Claim[]
                         {
-                            new Claim(ClaimTypes.Name, user.Id.ToString())
+                            new Claim(ClaimTypes.Name, user.Id.ToString()),
+                            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                            new Claim(ClaimTypes.Role, user.Role)
                         }
                     ),
                     Expires = DateTime.UtcNow.AddDays(2),

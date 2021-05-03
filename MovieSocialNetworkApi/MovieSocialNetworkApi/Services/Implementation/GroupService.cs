@@ -196,7 +196,9 @@ namespace MovieSocialNetworkApi.Services
                     Subject = new ClaimsIdentity(
                         new Claim[]
                         {
-                            new Claim(ClaimTypes.Name, groupAdmin.Group.Id.ToString())
+                            new Claim(ClaimTypes.Name, groupAdmin.Group.Id.ToString()),
+                            new Claim(ClaimTypes.NameIdentifier, groupAdmin.Group.Id.ToString()),
+                            new Claim(ClaimTypes.Role, groupAdmin.Group.Role)
                         }
                     ),
                     Expires = DateTime.UtcNow.AddDays(2),

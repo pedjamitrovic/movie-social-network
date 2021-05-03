@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.FileProviders;
 using System.IO;
+using MovieSocialNetworkApi.Hubs;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi
 {
@@ -30,6 +32,7 @@ namespace MovieSocialNetworkApi
             services.AddCors();
             services.AddControllers();
             services.AddHttpContextAccessor();
+            services.AddSignalR();
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -51,6 +54,22 @@ namespace MovieSocialNetworkApi
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
                     ValidateAudience = false
+                };
+
+                x.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/chat")))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
@@ -80,9 +99,10 @@ namespace MovieSocialNetworkApi
             app.UseRouting();
 
             app.UseCors(x => x
-                .AllowAnyOrigin()
+                .WithOrigins("http://localhost:4200")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
+                .AllowCredentials()
             );
 
             app.UseStaticFiles(
@@ -96,7 +116,12 @@ namespace MovieSocialNetworkApi
             app.UseAuthentication();
             app.UseAuthorization();
 
-            app.UseEndpoints(endpoints => endpoints.MapControllers());
+            app.UseEndpoints(endpoints =>
+                {
+                    endpoints.MapControllers();
+                    endpoints.MapHub<ChatHub>("/chat");
+                }
+            );
         }
     }
 }

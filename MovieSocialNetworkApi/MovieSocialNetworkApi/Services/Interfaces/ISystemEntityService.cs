@@ -6,6 +6,8 @@ namespace MovieSocialNetworkApi.Services
 {
     public interface ISystemEntityService
     {
+        Task<SystemEntityVM> GetById(int id);
+        Task<PagedList<SystemEntityVM>> GetList(Paging paging, Sorting sorting, string q);
         Task Report(int id, ReportCommand command);
         Task Ban(int id, BanCommand command);
         Task ChangeImage(int id, string type, string imagePath);

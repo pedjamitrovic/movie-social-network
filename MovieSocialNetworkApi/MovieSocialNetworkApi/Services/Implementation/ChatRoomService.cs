@@ -6,7 +6,6 @@ using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
-using MovieSocialNetworkApi.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,11 +51,11 @@ namespace MovieSocialNetworkApi.Services
                 {
                     if (sorting.SortOrder == SortOrder.Desc)
                     {
-                        chatRooms = chatRooms.OrderByDescending((e) => e.Messages.LastOrDefault() != null ? e.Messages.LastOrDefault().CreatedOn: DateTimeOffset.UtcNow);
+                        chatRooms = chatRooms.OrderByDescending((e) => e.Messages.OrderByDescending(m => m.CreatedOn).FirstOrDefault().CreatedOn);
                     }
                     else
                     {
-                        chatRooms = chatRooms.OrderBy((e) => e.Messages.LastOrDefault() != null ? e.Messages.LastOrDefault().CreatedOn : DateTimeOffset.UtcNow);
+                        chatRooms = chatRooms.OrderBy((e) => e.Messages.OrderBy(m => m.CreatedOn).FirstOrDefault().CreatedOn);
                     }
                 }
                 else
@@ -76,7 +75,18 @@ namespace MovieSocialNetworkApi.Services
                 var items = await chatRooms.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
                 result.Items = _mapper.Map<List<ChatRoomVM>>(items);
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
-                result.Items.ForEach(async (e) => e.NewestMessage = _mapper.Map<MessageVM>(await _context.Messages.FirstOrDefaultAsync((q) => q.Id == e.Id)));
+                
+                foreach (var cr in result.Items)
+                {
+                    var newestMessage = await _context.Messages.Where(m => m.ChatRoomId == cr.Id).OrderByDescending(m => m.CreatedOn).FirstOrDefaultAsync();
+                    cr.NewestMessage = _mapper.Map<MessageVM>(newestMessage);
+                    var members = await _context.ChatRoomMemberships
+                        .Include(crm => crm.Member)
+                        .Where(crm => crm.ChatRoomId == cr.Id && crm.MemberId != authSystemEntity.Id)
+                        .Select(crm => crm.Member)
+                        .ToListAsync();
+                    cr.Members = _mapper.Map<List<SystemEntityVM>>(members);
+                }
 
                 return result;
             }
@@ -112,6 +122,13 @@ namespace MovieSocialNetworkApi.Services
 
                 var chatRoomVM = _mapper.Map<ChatRoomVM>(chatRoom);
 
+                var members = await _context.ChatRoomMemberships
+                    .Include(crm => crm.Member)
+                    .Where(crm => crm.ChatRoomId == chatRoomVM.Id && crm.MemberId != authSystemEntity.Id)
+                    .Select(crm => crm.Member)
+                    .ToListAsync();
+                chatRoomVM.Members = _mapper.Map<List<SystemEntityVM>>(members);
+
                 return chatRoomVM;
             }
             catch (Exception e)
@@ -129,8 +146,7 @@ namespace MovieSocialNetworkApi.Services
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var chatRoomMembership = await _context.ChatRoomMemberships
-                    .Where(e => e.ChatRoomId == chatRoomId && e.MemberId == authSystemEntity.Id)
-                    .SingleOrDefaultAsync();
+                    .SingleOrDefaultAsync(e => e.ChatRoomId == chatRoomId && e.MemberId == authSystemEntity.Id);
 
                 if (chatRoomMembership == null) throw new BusinessException($"Authenticated system entity is not memeber of chat room with id {chatRoomId}");
 
@@ -187,8 +203,7 @@ namespace MovieSocialNetworkApi.Services
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var chatRoomMembership = await _context.ChatRoomMemberships.Include(e => e.ChatRoom)
-                    .Where(e => e.ChatRoomId == command.ChatRoomId && e.MemberId == authSystemEntity.Id)
-                    .SingleOrDefaultAsync();
+                    .SingleOrDefaultAsync(e => e.ChatRoomId == command.ChatRoomId && e.MemberId == authSystemEntity.Id);
 
                 if (chatRoomMembership == null) throw new BusinessException($"Authenticated system entity is not memeber of chat room with id {command.ChatRoomId}");
 
@@ -209,6 +224,24 @@ namespace MovieSocialNetworkApi.Services
                 var messageVM = _mapper.Map<MessageVM>(message);
 
                 return messageVM;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<SystemEntityVM>> GetMembers(int chatRoomId)
+        {
+            try
+            {
+                var sysEntities = await _context.ChatRoomMemberships.Include(e => e.Member)
+                    .Where(e => e.ChatRoomId == chatRoomId)
+                    .Select(e => e.Member)
+                    .ToListAsync();
+
+                return _mapper.Map<List<SystemEntityVM>>(sysEntities);
             }
             catch (Exception e)
             {

@@ -1,33 +1,31 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Services;
 using System;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Hubs
 {
     public class ChatHub: Hub<IChatHub>
     {
-        public void SendMessage(CreateMessageCommand command)
+        private readonly IChatRoomService _chatRoomService;
+
+        public ChatHub(
+            IChatRoomService chatRoomService
+        )
         {
-            var chatRoom = new ChatRoom
+            _chatRoomService = chatRoomService;
+        }
+
+        public async Task SendMessage(CreateMessageCommand command)
+        {
+            var messageVM = await _chatRoomService.CreateMessage(command);
+            var members = await _chatRoomService.GetMembers(command.ChatRoomId);
+            foreach (var member in members)
             {
-                Id = 1,
-                Memberships = new ChatRoomMembership[] {
-                    new ChatRoomMembership { ChatRoomId = 1, MemberId = 3 },
-                    new ChatRoomMembership { ChatRoomId = 1, MemberId = 4 },
-                }
-            };
-            var messageVM = new MessageVM
-            {
-                Id = command.ChatRoomId,
-                SenderId = Int32.Parse(Context.User.Identity.Name),
-                ChatRoomId = chatRoom.Id,
-                CreatedOn = DateTimeOffset.UtcNow,
-                Delivered = false,
-                Seen = false,
-                Text = command.Text
-            };
-            Clients.Users("3", "4").ReceiveMessage(messageVM);
+                await Clients.User(member.Id.ToString()).ReceiveMessage(messageVM);
+            }
         }
     }
 }

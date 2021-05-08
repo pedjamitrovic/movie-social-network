@@ -38,6 +38,74 @@ namespace MovieSocialNetworkApi.Services
             _appSettings = appSettings.Value;
         }
 
+        public async Task<SystemEntityVM> GetById(int id)
+        {
+            try
+            {
+                var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
+                return _mapper.Map<SystemEntityVM>(sysEntity);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<PagedList<SystemEntityVM>> GetList(Paging paging, Sorting sorting, string q)
+        {
+            try
+            {
+                var sysEntities = _context.SystemEntities.AsQueryable();
+
+                if (!string.IsNullOrEmpty(q))
+                {
+                    sysEntities = sysEntities.Where((e) => e.Description.ToLower().Contains(q.ToLower()));
+                }
+
+                if (string.IsNullOrWhiteSpace(sorting.SortBy))
+                {
+                    sorting.SortBy = "followers";
+                }
+
+                if (sorting.SortBy == "followers")
+                {
+                    if (sorting.SortOrder == SortOrder.Desc)
+                    {
+                        sysEntities = sysEntities.Include(e => e.Followers).OrderByDescending((e) => e.Followers.Count);
+                    }
+                    else
+                    {
+                        sysEntities = sysEntities.Include(e => e.Followers).OrderBy((e) => e.Followers.Count);
+                    }
+                }
+                else
+                {
+                    throw new BusinessException($"Sorting by field {sorting.SortBy} is not supported");
+                }
+
+                PagedList<SystemEntityVM> result = new PagedList<SystemEntityVM>
+                {
+                    TotalCount = await sysEntities.CountAsync(),
+                    PageSize = paging.PageSize,
+                    Page = paging.PageNumber,
+                    SortBy = sorting.SortBy,
+                    SortOrder = sorting.SortOrder,
+                };
+
+                var items = await sysEntities.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+                result.Items = _mapper.Map<List<SystemEntityVM>>(items);
+                result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
         public async Task Report(int id, ReportCommand command)
         {
             try

@@ -10,5 +10,6 @@ namespace MovieSocialNetworkApi.Services
         Task<ChatRoomVM> Create(ICollection<int> memberIds);
         Task<PagedList<MessageVM>> GetMessageList(Paging paging, Sorting sorting, int chatRoomId);
         Task<MessageVM> CreateMessage(CreateMessageCommand command);
+        Task<IEnumerable<SystemEntityVM>> GetMembers(int chatRoomId);
     }
 }

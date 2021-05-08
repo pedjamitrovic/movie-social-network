@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
@@ -52,7 +50,7 @@ namespace MovieSocialNetworkApi.Controllers
             }
         }
 
-        [HttpPost, DisableRequestSizeLimit]
+        [HttpPost]
         public async Task<IActionResult> Create(ICollection<int> memberIds)
         {
             try

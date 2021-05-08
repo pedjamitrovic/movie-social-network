@@ -28,6 +28,8 @@ namespace MovieSocialNetworkApi
             CreateMap<CommentVM, Comment>().ReverseMap();
             CreateMap<ReactionVM, Reaction>().ReverseMap();
             CreateMap<MessageVM, Message>().ReverseMap();
+            CreateMap<ChatRoomVM, ChatRoom>().ReverseMap();
+            CreateMap<ChatRoomMembershipVM, ChatRoomMembership>().ReverseMap();
         }
     }
 }

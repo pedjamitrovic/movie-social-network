@@ -6,7 +6,7 @@ namespace MovieSocialNetworkApi.Models
     public class ChatRoomVM
     {
         public int Id { get; set; }
-        public ICollection<ChatRoomMembership> Memberships { get; set; }
+        public ICollection<SystemEntityVM> Members { get; set; }
         public MessageVM NewestMessage { get; set; }
     }
 }

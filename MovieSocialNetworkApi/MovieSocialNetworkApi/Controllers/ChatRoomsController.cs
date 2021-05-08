@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using MovieSocialNetworkApi.Exceptions;
+using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
 using System.Collections.Generic;
@@ -14,12 +16,18 @@ namespace MovieSocialNetworkApi.Controllers
     public class ChatRoomsController : Controller
     {
         private readonly IChatRoomService _chatRoomService;
+        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
+        private readonly IAuthService _authService;
 
         public ChatRoomsController(
-            IChatRoomService chatRoomService
+            IChatRoomService chatRoomService,
+            IHubContext<ChatHub, IChatHub> hubContext,
+            IAuthService authService
         )
         {
             _chatRoomService = chatRoomService;
+            _hubContext = hubContext;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -51,11 +59,19 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(ICollection<int> memberIds)
+        public async Task<IActionResult> Create(CreateChatRoomCommand command)
         {
             try
             {
-                var result = await _chatRoomService.Create(memberIds);
+                var authUser = await _authService.GetAuthenticatedSystemEntity();
+                var result = await _chatRoomService.Create(command.MemberIds);
+
+                foreach (var memberId in command.MemberIds)
+                {
+                    if (memberId == authUser.Id) continue;
+                    await _hubContext.Clients.User(memberId.ToString()).ChatRoomCreated(result);
+                }
+
                 return Ok(result);
             }
             catch (BusinessException e)

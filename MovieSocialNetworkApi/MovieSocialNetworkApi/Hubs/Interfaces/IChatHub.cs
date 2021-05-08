@@ -7,5 +7,6 @@ namespace MovieSocialNetworkApi.Hubs
     {
         Task SendMessage(CreateMessageCommand command);
         Task ReceiveMessage(MessageVM messageVM);
+        Task ChatRoomCreated(ChatRoomVM chatRoomVM);
     }
 }

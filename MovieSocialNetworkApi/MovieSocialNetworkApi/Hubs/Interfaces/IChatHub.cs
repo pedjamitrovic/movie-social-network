@@ -5,8 +5,12 @@ namespace MovieSocialNetworkApi.Hubs
 {
     public interface IChatHub
     {
+        // Client calls
         Task SendMessage(CreateMessageCommand command);
-        Task ReceiveMessage(MessageVM messageVM);
-        Task ChatRoomCreated(ChatRoomVM chatRoomVM);
+        Task SetMessageSeen(int messageId);
+        // Server notifies
+        Task NotifyChatRoomCreated(ChatRoomVM chatRoomVM);
+        Task NotifyMessageCreated(MessageVM messageVM);
+        Task NotifyMessageSeen(MessageVM messageVM);
     }
 }

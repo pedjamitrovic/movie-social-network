@@ -215,7 +215,6 @@ namespace MovieSocialNetworkApi.Services
                 {
                     ChatRoomId = command.ChatRoomId,
                     CreatedOn = DateTimeOffset.UtcNow,
-                    Delivered = false,
                     Seen = false,
                     SenderId = authSystemEntity.Id,
                     Text = command.Text
@@ -246,6 +245,32 @@ namespace MovieSocialNetworkApi.Services
                     .ToListAsync();
 
                 return _mapper.Map<List<SystemEntityVM>>(sysEntities);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<MessageVM> SetMessageSeen(int messageId)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var message = await _context.Messages.SingleOrDefaultAsync((m) => m.Id == messageId);
+                if (message == null) throw new BusinessException($"Message with provided id not found");
+
+                var previousUnseenMessages = await _context.Messages.Where(
+                    (m) => m.ChatRoomId == message.ChatRoomId && m.SenderId != authSystemEntity.Id && !m.Seen
+                ).ToListAsync();
+
+                previousUnseenMessages.ForEach((m) => m.Seen = true);
+                await _context.SaveChangesAsync();
+
+                return _mapper.Map<MessageVM>(message);
             }
             catch (Exception e)
             {

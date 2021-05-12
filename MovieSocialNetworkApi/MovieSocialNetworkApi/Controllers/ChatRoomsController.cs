@@ -69,7 +69,7 @@ namespace MovieSocialNetworkApi.Controllers
                 foreach (var memberId in command.MemberIds)
                 {
                     if (memberId == authUser.Id) continue;
-                    await _hubContext.Clients.User(memberId.ToString()).ChatRoomCreated(result);
+                    await _hubContext.Clients.User(memberId.ToString()).NotifyChatRoomCreated(result);
                 }
 
                 return Ok(result);

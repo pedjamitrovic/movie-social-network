@@ -12,7 +12,6 @@ namespace MovieSocialNetworkApi.Entities
         public int ChatRoomId { get; set; }
         public string Text { get; set; }
         public DateTimeOffset CreatedOn { get; set; }
-        public bool Delivered { get; set; }
         public bool Seen { get; set; }
         public virtual SystemEntity Sender { get; set; }
         public virtual ChatRoom ChatRoom { get; set; }

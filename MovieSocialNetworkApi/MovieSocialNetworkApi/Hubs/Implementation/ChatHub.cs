@@ -24,7 +24,16 @@ namespace MovieSocialNetworkApi.Hubs
             var members = await _chatRoomService.GetMembers(command.ChatRoomId);
             foreach (var member in members)
             {
-                await Clients.User(member.Id.ToString()).ReceiveMessage(messageVM);
+                await Clients.User(member.Id.ToString()).NotifyMessageCreated(messageVM);
+            }
+        }
+        public async Task SetMessageSeen(int messageId)
+        {
+            var messageVM = await _chatRoomService.SetMessageSeen(messageId);
+            var members = await _chatRoomService.GetMembers(messageVM.ChatRoomId);
+            foreach (var member in members)
+            {
+                await Clients.User(member.Id.ToString()).NotifyMessageSeen(messageVM);
             }
         }
     }

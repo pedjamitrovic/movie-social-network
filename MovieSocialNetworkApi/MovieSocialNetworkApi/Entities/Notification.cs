@@ -13,7 +13,7 @@ namespace MovieSocialNetworkApi.Entities
         public int RecepientId { get; set; }
         public DateTimeOffset CreatedOn { get; set; }
         public bool Seen { get; set; }
-        public byte[] Extended { get; set; }
+        public string Extended { get; set; }
         public virtual SystemEntity Sender { get; set; }
         public virtual SystemEntity Recepient { get; set; }
     }

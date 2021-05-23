@@ -1,20 +1,18 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
+using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
-using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Services
 {
@@ -24,18 +22,21 @@ namespace MovieSocialNetworkApi.Services
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
+        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
 
         public NotificationService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<UserService> logger,
-            IAuthService auth
+            IAuthService auth,
+            IHubContext<ChatHub, IChatHub> hubContext
         )
         {
             _context = context;
             _mapper = mapper;
             _logger = logger;
             _auth = auth;
+            _hubContext = hubContext;
         }
 
         public async Task<PagedList<NotificationVM>> GetMyNotifications(Paging paging, Sorting sorting)
@@ -82,6 +83,77 @@ namespace MovieSocialNetworkApi.Services
                 result.TotalPages = (result.TotalCount % result.PageSize > 0) ? (result.TotalCount / result.PageSize + 1) : (result.TotalCount / result.PageSize);
 
                 return result;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<NotificationVM> CreateNotification(string type, int senderId, int recepientId, Dictionary<string, object> extended = null)
+        {
+            try
+            {
+                var notification = new Notification
+                {
+                    Type = type,
+                    SenderId = senderId,
+                    RecepientId = recepientId,
+                    CreatedOn = DateTimeOffset.UtcNow,
+                    Seen = false,
+                    Extended = JsonConvert.SerializeObject(extended),
+                };
+
+                _context.Notifications.Add(notification);
+
+                await _context.SaveChangesAsync();
+
+                var notificationVM = _mapper.Map<NotificationVM>(notification);
+
+                await _hubContext.Clients.User(recepientId.ToString()).NotifyNewNotification(notificationVM);
+
+                return notificationVM;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<int> GetMyUnseenNotificationCount()
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var count = await _context.Notifications.Where(n => n.RecepientId == authSystemEntity.Id && !n.Seen).CountAsync();
+
+                return count;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+        public async Task<NotificationVM> SetNotificationSeen(int notificationId)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var notification = await _context.Notifications.Include(n => n.Sender).SingleOrDefaultAsync(n => n.Id == notificationId);
+                if (notification == null) throw new BusinessException($"Notification with provided id not found");
+
+                notification.Seen = true;
+
+                await _context.SaveChangesAsync();
+
+                return _mapper.Map<NotificationVM>(notification);
             }
             catch (Exception e)
             {

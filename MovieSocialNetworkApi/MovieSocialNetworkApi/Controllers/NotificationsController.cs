@@ -41,5 +41,23 @@ namespace MovieSocialNetworkApi.Controllers
                 return BadRequest();
             }
         }
+
+        [HttpGet("count")]
+        public async Task<IActionResult> GetMyUnseenNotificationCount()
+        {
+            try
+            {
+                var result = await _notificationService.GetMyUnseenNotificationCount();
+                return Ok(result);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
     }
 }

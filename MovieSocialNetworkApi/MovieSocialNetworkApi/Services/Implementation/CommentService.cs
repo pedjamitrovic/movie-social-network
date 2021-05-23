@@ -20,18 +20,21 @@ namespace MovieSocialNetworkApi.Services
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
+        private readonly INotificationService _notificationService;
 
         public CommentService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<CommentService> logger,
-            IAuthService auth
+            IAuthService auth,
+            INotificationService notificationService
         )
         {
             _context = context;
             _mapper = mapper;
             _logger = logger;
             _auth = auth;
+            _notificationService = notificationService;
         }
 
         public async Task<PagedList<CommentVM>> GetList(Paging paging, Sorting sorting, string q, int? creatorId, int? postId)
@@ -150,7 +153,7 @@ namespace MovieSocialNetworkApi.Services
                 var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
-                var post = await _context.Contents.OfType<Post>().SingleOrDefaultAsync(e => e.Id == command.PostId);
+                var post = await _context.Contents.OfType<Post>().Include(p => p.Creator).SingleOrDefaultAsync(e => e.Id == command.PostId);
                 if (post == null) throw new BusinessException($"Post with {command.PostId} not found");
 
                 var comment = new Comment
@@ -164,6 +167,12 @@ namespace MovieSocialNetworkApi.Services
                 _context.Contents.Add(comment);
 
                 await _context.SaveChangesAsync();
+
+                var extended = new Dictionary<string, object> {
+                    { "commentId", comment.Id }
+                };
+
+                await _notificationService.CreateNotification(NotificationType.Comment, comment.Creator.Id, post.Creator.Id, extended);
 
                 var commentVM = _mapper.Map<Comment, CommentVM>(comment);
 

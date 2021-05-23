@@ -10,12 +10,15 @@ namespace MovieSocialNetworkApi.Hubs
     public class ChatHub: Hub<IChatHub>
     {
         private readonly IChatRoomService _chatRoomService;
+        private readonly INotificationService _notificationService;
 
         public ChatHub(
-            IChatRoomService chatRoomService
+            IChatRoomService chatRoomService,
+            INotificationService notificationService
         )
         {
             _chatRoomService = chatRoomService;
+            _notificationService = notificationService;
         }
 
         public async Task SendMessage(CreateMessageCommand command)
@@ -35,6 +38,10 @@ namespace MovieSocialNetworkApi.Hubs
             {
                 await Clients.User(member.Id.ToString()).NotifyMessageSeen(messageVM);
             }
+        }
+        public async Task SetNotificationSeen(int notificationId)
+        {
+            await _notificationService.SetNotificationSeen(notificationId);
         }
     }
 }

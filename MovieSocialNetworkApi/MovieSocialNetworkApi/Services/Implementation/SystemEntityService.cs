@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -6,6 +7,7 @@ using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
+using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Models.Response;
 using System;
@@ -22,13 +24,15 @@ namespace MovieSocialNetworkApi.Services
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
         private readonly AppSettings _appSettings;
+        private readonly INotificationService _notificationService;
 
         public SystemEntityService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<SystemEntityService> logger,
             IAuthService auth,
-            IOptions<AppSettings> appSettings
+            IOptions<AppSettings> appSettings,
+            INotificationService notificationService
         )
         {
             _context = context;
@@ -36,6 +40,7 @@ namespace MovieSocialNetworkApi.Services
             _logger = logger;
             _auth = auth;
             _appSettings = appSettings.Value;
+            _notificationService = notificationService;
         }
 
         public async Task<SystemEntityVM> GetById(int id)
@@ -232,7 +237,7 @@ namespace MovieSocialNetworkApi.Services
             try
             {
                 var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
-                if (authSystemEntity == null) throw new BusinessException($"User not found");
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
@@ -250,6 +255,8 @@ namespace MovieSocialNetworkApi.Services
                     _context.Relations.Add(relation);
 
                     await _context.SaveChangesAsync();
+
+                    await _notificationService.CreateNotification(NotificationType.Follow, relation.FollowerId, relation.FollowingId);
                 }
             }
             catch (Exception e)

@@ -122,18 +122,18 @@ namespace MovieSocialNetworkApi.Services
                 var sysEntity = await _context.SystemEntities.Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
 
-                var existingReport = sysEntity.ReportedReports.ToList().Find(e => e.ReporterId == authSystemEntity.Id);
+                var existingReport = sysEntity.ReportedReports.SingleOrDefault((e) => e.ReporterId == authSystemEntity.Id && e.ReportedSystemEntityId == id && !e.Reviewed);
 
                 if (existingReport != null)
                 {
-                    throw new BusinessException($"User {sysEntity.Id} already has active report by user {authSystemEntity.Id}");
+                    throw new BusinessException($"User {sysEntity.Id} already has active report by user {authSystemEntity.Id}", BusinessErrorCode.AlreadyExists);
                 }
 
                 var report = new Report
                 {
                     Reason = command.Reason,
-                    ReporterId = authSystemEntity.Id,
-                    ReportedSystemEntityId = sysEntity.Id
+                    Reporter = authSystemEntity,
+                    ReportedSystemEntity = sysEntity
                 };
 
                 _context.Reports.Add(report);

@@ -8,5 +8,6 @@
         public const int InvalidPassword = 10003;
         public const int TitleAlreadyExists = 10004;
         public const int NotAdmin = 10005;
+        public const int AlreadyExists = 10006;
     }
 }

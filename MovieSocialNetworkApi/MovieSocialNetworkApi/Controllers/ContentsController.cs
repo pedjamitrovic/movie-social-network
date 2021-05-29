@@ -40,5 +40,23 @@ namespace MovieSocialNetworkApi.Controllers
                 return Forbid();
             }
         }
+
+        [HttpPost("{id}/report"), DisableRequestSizeLimit]
+        public async Task<IActionResult> Report(int id, ReportCommand command)
+        {
+            try
+            {
+                await _contentService.Report(id, command);
+                return Ok();
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
+        }
     }
 }

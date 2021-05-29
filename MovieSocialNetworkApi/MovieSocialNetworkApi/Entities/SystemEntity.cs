@@ -13,8 +13,7 @@ namespace MovieSocialNetworkApi.Entities
         public string ProfileImagePath { get; set; }
         public string CoverImagePath { get; set; }
         public string Discriminator { get; set; }
-        public virtual ICollection<Post> Posts { get; set; }
-        public virtual ICollection<Comment> Comments { get; set; }
+        public virtual ICollection<Content> Contents { get; set; }
         public virtual ICollection<Relation> Following { get; set; }
         public virtual ICollection<Relation> Followers { get; set; }
         public virtual ICollection<Report> ReporterReports { get; set; }

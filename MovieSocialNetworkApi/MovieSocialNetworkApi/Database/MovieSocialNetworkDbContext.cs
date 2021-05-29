@@ -23,6 +23,9 @@ namespace MovieSocialNetworkApi.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Post>();
+            modelBuilder.Entity<Comment>();
+
             modelBuilder.Entity<Relation>()
                 .HasKey(e => new { e.FollowingId, e.FollowerId });
 

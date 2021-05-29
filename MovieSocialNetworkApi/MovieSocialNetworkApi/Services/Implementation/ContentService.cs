@@ -87,23 +87,25 @@ namespace MovieSocialNetworkApi.Services
             {
                 var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
-                if (authSystemEntity.Id == id) throw new ForbiddenException($"User has no permission to report his posts");
 
-                var post = await _context.Contents.OfType<Post>().Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
-                if (post == null) throw new BusinessException($"Post with {id} not found");
+                var content = await _context.Contents.Include(e => e.ReportedReports).Include(e => e.Creator).SingleOrDefaultAsync(e => e.Id == id);
+                if (content == null) throw new BusinessException($"Content with {id} not found");
 
-                var existingReport = post.ReportedReports.ToList().Find(e => e.ReporterId == authSystemEntity.Id);
+                if (content.Creator.Id == id) throw new ForbiddenException($"User has no permission to report his content");
+
+                var existingReport = content.ReportedReports.SingleOrDefault((e) => e.ReporterId == authSystemEntity.Id && e.ReportedContent.Id == id && !e.Reviewed);
 
                 if (existingReport != null)
                 {
-                    throw new BusinessException($"Post {post.Id} already has active report by user {authSystemEntity.Id}");
+                    throw new BusinessException($"Content {content.Id} already has active report by user {authSystemEntity.Id}", BusinessErrorCode.AlreadyExists);
                 }
 
                 var report = new Report
                 {
                     Reason = command.Reason,
                     Reporter = authSystemEntity,
-                    ReportedContent = post,
+                    ReportedSystemEntity = content.Creator,
+                    ReportedContent = content
                 };
 
                 _context.Reports.Add(report);

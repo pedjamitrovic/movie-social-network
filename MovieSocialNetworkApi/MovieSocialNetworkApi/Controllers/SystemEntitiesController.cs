@@ -165,5 +165,23 @@ namespace MovieSocialNetworkApi.Controllers
                 return Forbid();
             }
         }
+
+        [HttpGet("bannable")]
+        public async Task<IActionResult> GetBannable([FromQuery] Paging paging, [FromQuery] Sorting sorting)
+        {
+            try
+            {
+                var result = await _systemEntityService.GetBannable(paging, sorting);
+                return Ok(result);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch
+            {
+                return BadRequest();
+            }
+        }
     }
 }

@@ -1,4 +1,6 @@
-﻿using MovieSocialNetworkApi.Models.Response;
+﻿using AutoMapper;
+using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Models.Response;
 using System.Linq;
 
 namespace MovieSocialNetworkApi.Entities
@@ -6,13 +8,12 @@ namespace MovieSocialNetworkApi.Entities
     public class Comment : Content
     {
         public virtual Post Post { get; set; }
-        public override ReportedDetails GetReportedDetails()
+        public override ReportedDetails GetReportedDetails(IMapper mapper)
         {
             var reportedDetails = new ReportedDetails
             {
-                Type = nameof(Comment),
-                Id = Id,
-
+                Discriminator = nameof(Comment),
+                Extended = mapper.Map<CommentVM>(this),
                 ReportedStats = ReportedReports
                 .GroupBy(e => e.Reason)
                 .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })

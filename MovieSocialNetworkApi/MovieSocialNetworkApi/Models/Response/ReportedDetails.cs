@@ -4,8 +4,8 @@ namespace MovieSocialNetworkApi.Models.Response
 {
     public class ReportedDetails
     {
-        public string Type { get; set; }
-        public int Id { get; set; }
         public List<ReportedStats> ReportedStats { get; set; }
+        public string Discriminator { get; set; }
+        public object Extended { get; set; }
     }
 }

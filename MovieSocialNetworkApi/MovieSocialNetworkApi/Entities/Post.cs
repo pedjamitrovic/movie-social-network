@@ -1,4 +1,6 @@
-﻿using MovieSocialNetworkApi.Models.Response;
+﻿using AutoMapper;
+using MovieSocialNetworkApi.Models;
+using MovieSocialNetworkApi.Models.Response;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,13 +11,12 @@ namespace MovieSocialNetworkApi.Entities
         public string FilePath { get; set; }
         public virtual ICollection<Comment> Comments { get; set; }
         public virtual Group ForGroup { get; set; }
-        public override ReportedDetails GetReportedDetails()
+        public override ReportedDetails GetReportedDetails(IMapper mapper)
         {
             var reportedDetails = new ReportedDetails
             {
-                Type = nameof(Post),
-                Id = Id,
-
+                Discriminator = nameof(Post),
+                Extended = mapper.Map<PostVM>(this),
                 ReportedStats = ReportedReports
                 .GroupBy(e => e.Reason)
                 .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })

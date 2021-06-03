@@ -559,7 +559,7 @@ namespace MovieSocialNetworkApi.Services
 
                 foreach (var sysEntity in bannableSysEntites)
                 {
-                    var rd = sysEntity.GetReportedDetails();
+                    var rd = sysEntity.GetReportedDetails(_mapper);
                     items.Add(rd);
                 }
 

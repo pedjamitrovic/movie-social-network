@@ -185,7 +185,7 @@ namespace MovieSocialNetworkApi.Services
 
                 foreach (var content in bannableContents)
                 {
-                    var rd = content.GetReportedDetails();
+                    var rd = content.GetReportedDetails(_mapper);
                     items.Add(rd);
                 }
 

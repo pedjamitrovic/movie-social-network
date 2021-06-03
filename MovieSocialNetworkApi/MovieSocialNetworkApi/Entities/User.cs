@@ -1,10 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MovieSocialNetworkApi.Database;
+﻿using AutoMapper;
+using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Models.Response;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Entities
 {
@@ -16,13 +15,12 @@ namespace MovieSocialNetworkApi.Entities
         [EmailAddress]
         public string Email { get; set; }
         public virtual ICollection<GroupAdmin> GroupAdmin { get; set; }
-        public override ReportedDetails GetReportedDetails()
+        public override ReportedDetails GetReportedDetails(IMapper mapper)
         {
             var reportedDetails = new ReportedDetails
             {
-                Type = nameof(User),
-                Id = Id,
-
+                Discriminator = nameof(User),
+                Extended = mapper.Map<UserVM>(this),
                 ReportedStats = ReportedReports
                 .GroupBy(e => e.Reason)
                 .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })

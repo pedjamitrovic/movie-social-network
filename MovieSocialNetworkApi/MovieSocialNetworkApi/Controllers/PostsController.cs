@@ -33,7 +33,7 @@ namespace MovieSocialNetworkApi.Controllers
             [FromQuery] string q, 
             [FromQuery] int? creatorId, 
             [FromQuery] int? followerId
-            )
+        )
         {
             try
             {
@@ -43,6 +43,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
 
@@ -57,6 +61,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
 

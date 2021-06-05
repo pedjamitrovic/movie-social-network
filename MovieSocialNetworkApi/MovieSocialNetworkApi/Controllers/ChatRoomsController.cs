@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using MovieSocialNetworkApi.Exceptions;
-using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Controllers
@@ -16,17 +13,14 @@ namespace MovieSocialNetworkApi.Controllers
     public class ChatRoomsController : Controller
     {
         private readonly IChatRoomService _chatRoomService;
-        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
         private readonly IAuthService _authService;
 
         public ChatRoomsController(
             IChatRoomService chatRoomService,
-            IHubContext<ChatHub, IChatHub> hubContext,
             IAuthService authService
         )
         {
             _chatRoomService = chatRoomService;
-            _hubContext = hubContext;
             _authService = authService;
         }
 
@@ -42,6 +36,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet("{id}/messages")]
@@ -56,6 +54,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpPost]
@@ -65,12 +67,6 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 var authUser = await _authService.GetAuthenticatedSystemEntity();
                 var result = await _chatRoomService.Create(command.MemberIds);
-
-                foreach (var memberId in command.MemberIds)
-                {
-                    if (memberId == authUser.Id) continue;
-                    await _hubContext.Clients.User(memberId.ToString()).NotifyChatRoomCreated(result);
-                }
 
                 return Ok(result);
             }

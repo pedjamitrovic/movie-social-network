@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
+using MovieSocialNetworkApi.Exceptions;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,7 +34,11 @@ namespace MovieSocialNetworkApi.Services
             try
             {
                 if (UserId == null) { return null; }
-                var systemEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
+                var systemEntity = await _context.SystemEntities.Include(se => se.Bans).SingleOrDefaultAsync(e => e.Id == long.Parse(UserId));
+
+                var activeBan = systemEntity.Bans.Any((b) => b.BannedUntil > DateTimeOffset.UtcNow);
+                if (activeBan) throw new ForbiddenException();
+
                 return systemEntity;
             }
             catch (Exception e)

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MovieSocialNetworkApi.Exceptions;
+using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
 using Newtonsoft.Json;
@@ -39,6 +40,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
             catch
             {
                 return BadRequest();
@@ -48,11 +53,26 @@ namespace MovieSocialNetworkApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var user = await _systemEntityService.GetById(id);
+            try
+            {
+                var user = await _systemEntityService.GetById(id);
 
-            if (user == null) return NotFound();
+                if (user == null) return NotFound();
 
-            return Ok(user);
+                return Ok(user);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
 
         [HttpPut("{id}/follow")]
@@ -66,6 +86,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
 
@@ -81,6 +105,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet("{id}/followers")]
@@ -95,6 +123,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet("{id}/following")]
@@ -108,6 +140,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
 
@@ -166,6 +202,7 @@ namespace MovieSocialNetworkApi.Controllers
             }
         }
 
+        [Authorize(Roles = Role.Admin)]
         [HttpGet("bannable")]
         public async Task<IActionResult> GetBannable([FromQuery] Paging paging, [FromQuery] Sorting sorting)
         {
@@ -178,9 +215,32 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
             catch
             {
                 return BadRequest();
+            }
+        }
+
+        [Authorize(Roles = Role.Admin)]
+        [HttpPost("{id}/review-report"), DisableRequestSizeLimit]
+        public async Task<IActionResult> ReviewReport(int id, ReviewReportCommand command)
+        {
+            try
+            {
+                await _systemEntityService.ReviewReport(id, command);
+                return Ok();
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
     }

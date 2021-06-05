@@ -35,6 +35,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
 
         [HttpGet("{id}")]
@@ -48,6 +52,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
         }
 

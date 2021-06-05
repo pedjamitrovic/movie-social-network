@@ -24,24 +24,30 @@ namespace MovieSocialNetworkApi.Services
         private readonly AppSettings _appSettings;
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
+        private readonly IAuthService _auth;
 
         public UserService(
             MovieSocialNetworkDbContext context,
             IOptions<AppSettings> appSettings,
             IMapper mapper,
-            ILogger<UserService> logger
+            ILogger<UserService> logger,
+            IAuthService auth
         )
         {
             _appSettings = appSettings.Value;
             _mapper = mapper;
             _logger = logger;
             _context = context;
+            _auth = auth;
         }
 
         public async Task<UserVM> GetById(int id)
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Id == id);
                 return _mapper.Map<UserVM>(user);
             }
@@ -165,10 +171,12 @@ namespace MovieSocialNetworkApi.Services
             {
                 var hashedPassword = PasswordHelper.SHA256(command.Password, _appSettings.PwSecret);
 
-                var user = await _context.SystemEntities.OfType<User>().SingleOrDefaultAsync(e => e.Username == command.Username);
+                var user = await _context.SystemEntities.OfType<User>().Include(u => u.Bans).SingleOrDefaultAsync(e => e.Username == command.Username);
 
                 if (user == null) throw new BusinessException("Invalid username", BusinessErrorCode.InvalidUsername);
                 if (user.Password != hashedPassword) throw new BusinessException("Invalid password", BusinessErrorCode.InvalidPassword);
+
+                var activeBan = user.Bans.Where((b) => b.BannedUntil > DateTimeOffset.UtcNow).FirstOrDefault();
 
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
@@ -180,17 +188,21 @@ namespace MovieSocialNetworkApi.Services
                         {
                             new Claim(ClaimTypes.Name, user.Id.ToString()),
                             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                            new Claim(ClaimTypes.Role, user.Role)
+                            new Claim(ClaimTypes.Role, user.Role),
                         }
                     ),
                     Expires = DateTime.UtcNow.AddDays(2),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
                 };
-
                 var token = tokenHandler.CreateToken(tokenDescriptor);
 
                 var authenticatedUser = _mapper.Map<AuthenticationInfo>(user);
                 authenticatedUser.Token = tokenHandler.WriteToken(token);
+                if (activeBan != null)
+                {
+                    authenticatedUser.IsBanned = true;
+                    authenticatedUser.BannedUntil = activeBan.BannedUntil;
+                }
 
                 return authenticatedUser;
             }

@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
+using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
 using System;
 using System.Collections.Generic;
@@ -19,18 +21,21 @@ namespace MovieSocialNetworkApi.Services
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
+        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
 
         public ChatRoomService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<PostService> logger,
-            IAuthService auth
+            IAuthService auth,
+            IHubContext<ChatHub, IChatHub> hubContext
         )
         {
             _context = context;
             _mapper = mapper;
             _logger = logger;
             _auth = auth;
+            _hubContext = hubContext;
         }
 
         public async Task<PagedList<ChatRoomVM>> GetMyChatRooms(Paging paging, Sorting sorting)
@@ -132,6 +137,12 @@ namespace MovieSocialNetworkApi.Services
                     .Select(crm => crm.Member)
                     .ToListAsync();
                 chatRoomVM.Members = _mapper.Map<List<SystemEntityVM>>(members);
+
+                foreach (var memberId in memberIds)
+                {
+                    if (memberId == authSystemEntity.Id) continue;
+                    await _hubContext.Clients.User(memberId.ToString()).NotifyChatRoomCreated(chatRoomVM);
+                }
 
                 return chatRoomVM;
             }
@@ -239,6 +250,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var sysEntities = await _context.ChatRoomMemberships.Include(e => e.Member)
                     .Where(e => e.ChatRoomId == chatRoomId)
                     .Select(e => e.Member)

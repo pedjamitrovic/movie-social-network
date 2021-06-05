@@ -4,11 +4,11 @@ using System.Runtime.Serialization;
 
 namespace MovieSocialNetworkApi.Models
 {
-    public class BanCommand
+    public class ReviewReportCommand
     {
         [Required]
+        public bool IssueBan { get; set; }
         public DateTimeOffset BannedUntil { get; set; }
-        [Required]
         public string Reason { get; set; }
     }
 }

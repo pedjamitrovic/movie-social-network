@@ -36,6 +36,10 @@ namespace MovieSocialNetworkApi.Controllers
             {
                 return BadRequest(new { message = e.Message });
             }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
             catch
             {
                 return BadRequest();
@@ -45,11 +49,26 @@ namespace MovieSocialNetworkApi.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var user = await _userService.GetById(id);
+            try
+            {
+                var user = await _userService.GetById(id);
 
-            if (user == null) return NotFound();
+                if (user == null) return NotFound();
 
-            return Ok(user);
+                return Ok(user);
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
+            catch
+            {
+                return BadRequest();
+            }
         }
 
         [AllowAnonymous]
@@ -64,6 +83,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
             catch
             {
@@ -83,6 +106,10 @@ namespace MovieSocialNetworkApi.Controllers
             catch (BusinessException e)
             {
                 return BadRequest(new { message = e.Message, code = e.Code });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
             }
             catch
             {

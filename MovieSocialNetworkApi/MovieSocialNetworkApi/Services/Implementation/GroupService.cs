@@ -50,7 +50,9 @@ namespace MovieSocialNetworkApi.Services
 
                 var group = await _context.SystemEntities.OfType<Group>().Include(e => e.GroupAdmin).SingleOrDefaultAsync(e => e.Id == id);
                 var groupVM = _mapper.Map<GroupVM>(group);
+
                 groupVM.IsAuthUserAdmin = group.GroupAdmin.Any(e => e.AdminId == authSystemEntity.Id);
+
                 return groupVM;
             }
             catch (Exception e)
@@ -184,9 +186,12 @@ namespace MovieSocialNetworkApi.Services
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
                 var groupAdmin = await _context.GroupAdmins.Include(e => e.Group)
+                    .ThenInclude(g => g.Bans)
                     .Where(e => e.AdminId == authSystemEntity.Id && e.GroupId == id)
                     .SingleOrDefaultAsync();
                 if (groupAdmin == null) throw new BusinessException($"Authenticated user is not admin of group with {id}", BusinessErrorCode.NotAdmin);
+
+                var activeBan = groupAdmin.Group.Bans.Where((b) => b.BannedUntil > DateTimeOffset.UtcNow).FirstOrDefault();
 
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var key = Encoding.ASCII.GetBytes(_appSettings.JwtSecret);
@@ -198,7 +203,7 @@ namespace MovieSocialNetworkApi.Services
                         {
                             new Claim(ClaimTypes.Name, groupAdmin.Group.Id.ToString()),
                             new Claim(ClaimTypes.NameIdentifier, groupAdmin.Group.Id.ToString()),
-                            new Claim(ClaimTypes.Role, groupAdmin.Group.Role)
+                            new Claim(ClaimTypes.Role, groupAdmin.Group.Role),
                         }
                     ),
                     Expires = DateTime.UtcNow.AddDays(2),
@@ -209,6 +214,11 @@ namespace MovieSocialNetworkApi.Services
 
                 var authenticatedUser = _mapper.Map<AuthenticationInfo>(groupAdmin.Group);
                 authenticatedUser.Token = tokenHandler.WriteToken(token);
+                if (activeBan != null)
+                {
+                    authenticatedUser.IsBanned = true;
+                    authenticatedUser.BannedUntil = activeBan.BannedUntil;
+                }
 
                 return authenticatedUser;
             }

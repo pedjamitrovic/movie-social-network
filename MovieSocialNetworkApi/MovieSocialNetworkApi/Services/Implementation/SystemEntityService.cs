@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,7 +6,6 @@ using MovieSocialNetworkApi.Database;
 using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
-using MovieSocialNetworkApi.Hubs;
 using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Models.Response;
 using System;
@@ -47,6 +45,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 return _mapper.Map<SystemEntityVM>(sysEntity);
             }
@@ -61,6 +62,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var sysEntities = _context.SystemEntities.AsQueryable();
 
                 if (!string.IsNullOrEmpty(q))
@@ -147,7 +151,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task Ban(int id, BanCommand command)
+        public async Task ReviewReport(int id, ReviewReportCommand command)
         {
             try
             {
@@ -158,15 +162,24 @@ namespace MovieSocialNetworkApi.Services
                 var sysEntity = await _context.SystemEntities.SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
 
-                var ban = new Ban
-                {
-                    BannedFrom = DateTimeOffset.UtcNow,
-                    BannedUntil = command.BannedUntil,
-                    Reason = command.Reason,
-                    BannedEntity = sysEntity
-                };
+                var activeReports = await _context.Reports.Where((r) => r.ReportedSystemEntity == sysEntity && !r.Reviewed).ToListAsync();
 
-                _context.Bans.Add(ban);
+                activeReports.ForEach((r) => r.Reviewed = true);
+
+                if (command.IssueBan)
+                {
+                    var ban = new Ban
+                    {
+                        BannedFrom = DateTimeOffset.UtcNow,
+                        BannedUntil = command.BannedUntil,
+                        Reason = command.Reason,
+                        BannedEntity = sysEntity
+                    };
+
+                    _context.Bans.Add(ban);
+
+                    activeReports.ForEach((r) => r.IssuedBan = ban);
+                }
 
                 await _context.SaveChangesAsync();
             }
@@ -176,6 +189,7 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
+
         public async Task ChangeImage(int id, string type, string imagePath)
         {
             try
@@ -302,6 +316,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var sysEntity = await _context.SystemEntities.Include(e => e.Followers).SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
 
@@ -363,6 +380,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var sysEntity = await _context.SystemEntities.Include(e => e.Following).SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with id {id} not found");
 
@@ -424,6 +444,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var posts = _context.Contents.OfType<Post>().AsQueryable();
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
@@ -473,6 +496,9 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
                 var comments = _context.Contents.OfType<Comment>().AsQueryable();
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
@@ -521,7 +547,10 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var sysEntities = _context.SystemEntities.Include(e => e.ReportedReports).Where(e => e.ReportedReports.Count > _appSettings.MinReportsCount).AsQueryable();
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var sysEntities = _context.SystemEntities.Include(e => e.ReportedReports).Where(e => e.ReportedReports.Where(e => !e.Reviewed).ToList().Count > _appSettings.MinReportsCount).AsQueryable();
 
                 if (string.IsNullOrWhiteSpace(sorting.SortBy))
                 {

@@ -9,7 +9,6 @@ namespace MovieSocialNetworkApi.Services
         Task<SystemEntityVM> GetById(int id);
         Task<PagedList<SystemEntityVM>> GetList(Paging paging, Sorting sorting, string q);
         Task Report(int id, ReportCommand command);
-        Task Ban(int id, BanCommand command);
         Task ChangeImage(int id, string type, string imagePath);
         Task ChangeDescription(int id, ChangeDescriptionCommand command);
         Task Follow(int id);
@@ -19,5 +18,6 @@ namespace MovieSocialNetworkApi.Services
         Task<PagedList<PostVM>> GetPosts(int id, Paging paging, Sorting sorting);
         Task<PagedList<CommentVM>> GetComments(int id, Paging paging, Sorting sorting);
         Task<PagedList<ReportedDetails>> GetBannable(Paging paging, Sorting sorting);
+        Task ReviewReport(int id, ReviewReportCommand command);
     }
 }

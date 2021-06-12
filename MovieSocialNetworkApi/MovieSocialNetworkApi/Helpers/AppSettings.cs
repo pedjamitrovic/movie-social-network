@@ -9,6 +9,8 @@ namespace MovieSocialNetworkApi.Helpers
     {
         public string JwtSecret { get; set; }
         public string PwSecret { get; set; }
+        public string TmdbApiKey { get; set; }
+        public string TmdbBaseUrl { get; set; }
         public int MinReportsCount { get; set; }
     }
 }

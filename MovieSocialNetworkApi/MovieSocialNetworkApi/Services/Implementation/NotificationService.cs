@@ -27,7 +27,7 @@ namespace MovieSocialNetworkApi.Services
         public NotificationService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<UserService> logger,
+            ILogger<NotificationService> logger,
             IAuthService auth,
             IHubContext<ChatHub, IChatHub> hubContext
         )

@@ -26,7 +26,7 @@ namespace MovieSocialNetworkApi.Services
         public ChatRoomService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
-            ILogger<PostService> logger,
+            ILogger<ChatRoomService> logger,
             IAuthService auth,
             IHubContext<ChatHub, IChatHub> hubContext
         )

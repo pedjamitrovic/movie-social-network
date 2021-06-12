@@ -17,6 +17,12 @@ namespace MovieSocialNetworkApi.Controllers
             _movieService = movieService;
         }
 
+        [HttpGet("configuration")]
+        public async Task<object> GetConfiguration()
+        {
+            return await _movieService.GetConfiguration();
+        }
+
         [HttpGet("movie/{id}")]
         public async Task<object> GetMovieDetails(int id)
         {

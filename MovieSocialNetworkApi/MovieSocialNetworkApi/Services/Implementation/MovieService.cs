@@ -40,6 +40,32 @@ namespace MovieSocialNetworkApi.Services
             _appSettings = appSettings.Value;
         }
 
+        public async Task<object> GetConfiguration()
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"configuration?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
         public async Task<object> GetMovieDetails(int id)
         {
             try
@@ -65,6 +91,7 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
+
         public async Task<object> SearchMovies(string query)
         {
             try

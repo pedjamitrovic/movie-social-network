@@ -46,5 +46,35 @@ namespace MovieSocialNetworkApi.Controllers
         {
             return await _movieService.GetPopularMovies();
         }
+
+        [HttpGet("movie/{id}/keywords")]
+        public async Task<object> GetMovieKeywords(int id)
+        {
+            return await _movieService.GetMovieKeywords(id);
+        }
+
+        [HttpGet("movie/{id}/recommendations")]
+        public async Task<object> GetMovieRecommendations(int id)
+        {
+            return await _movieService.GetMovieRecommendations(id);
+        }
+
+        [HttpGet("movie/{id}/credits")]
+        public async Task<object> GetMovieCredits(int id)
+        {
+            return await _movieService.GetMovieCredits(id);
+        }
+
+        [HttpGet("movie/{id}/similar")]
+        public async Task<object> GetSimilarMovies(int id)
+        {
+            return await _movieService.GetSimilarMovies(id);
+        }
+
+        [HttpGet("movie/{id}/videos")]
+        public async Task<object> GetMovieVideos(int id)
+        {
+            return await _movieService.GetMovieVideos(id);
+        }
     }
 }

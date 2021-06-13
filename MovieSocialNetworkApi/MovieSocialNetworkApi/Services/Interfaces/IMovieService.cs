@@ -9,5 +9,10 @@ namespace MovieSocialNetworkApi.Services
         Task<object> SearchMovies(string query);
         Task<object> GetTrendingMovies(string timeWindow);
         Task<object> GetPopularMovies();
+        Task<object> GetMovieKeywords(int id);
+        Task<object> GetMovieRecommendations(int id);
+        Task<object> GetMovieCredits(int id);
+        Task<object> GetSimilarMovies(int id);
+        Task<object> GetMovieVideos(int id);
     }
 }

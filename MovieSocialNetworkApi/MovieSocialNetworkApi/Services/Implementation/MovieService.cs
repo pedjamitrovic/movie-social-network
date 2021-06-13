@@ -169,6 +169,134 @@ namespace MovieSocialNetworkApi.Services
                 throw;
             }
         }
+        public async Task<object> GetMovieKeywords(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"movie/{id}/keywords?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<object> GetMovieRecommendations(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"movie/{id}/recommendations?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<object> GetMovieCredits(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"movie/{id}/credits?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<object> GetSimilarMovies(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"movie/{id}/similar?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<object> GetMovieVideos(int id)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                using var httpClient = new HttpClient
+                {
+                    BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
+                };
+
+                using var response = await httpClient.GetAsync(new Uri($"movie/{id}/videos?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+
+                response.EnsureSuccessStatusCode();
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
     }
 }

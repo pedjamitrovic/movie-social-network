@@ -20,6 +20,7 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<ChatRoomMembership> ChatRoomMemberships { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<MovieRating> MovieRatings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

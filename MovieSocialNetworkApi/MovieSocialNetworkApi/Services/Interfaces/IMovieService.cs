@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using MovieSocialNetworkApi.Entities;
+using MovieSocialNetworkApi.Models;
+using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Services
 {
@@ -14,5 +16,7 @@ namespace MovieSocialNetworkApi.Services
         Task<object> GetMovieCredits(int id);
         Task<object> GetSimilarMovies(int id);
         Task<object> GetMovieVideos(int id);
+        Task<MovieRatingVM> GetMyMovieRating(int movieId);
+        Task<MovieRatingVM> RateMovie(int movieId, RateMovieCommand command);
     }
 }

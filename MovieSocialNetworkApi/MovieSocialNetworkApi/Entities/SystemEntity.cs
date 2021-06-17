@@ -23,6 +23,7 @@ namespace MovieSocialNetworkApi.Entities
         public virtual ICollection<ChatRoomMembership> ChatRoomMemberships { get; set; }
         public virtual ICollection<Notification> SentNotifications { get; set; }
         public virtual ICollection<Notification> ReceivedNotifications { get; set; }
+        public virtual ICollection<MovieRating> MovieRatings { get; set; }
         public abstract ReportedDetails GetReportedDetails(IMapper mapper);
     }
 }

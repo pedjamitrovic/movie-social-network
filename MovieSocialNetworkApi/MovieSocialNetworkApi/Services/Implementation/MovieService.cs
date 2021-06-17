@@ -44,9 +44,6 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
-                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
-
                 using var httpClient = new HttpClient
                 {
                     BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
@@ -291,6 +288,75 @@ namespace MovieSocialNetworkApi.Services
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 return JsonConvert.DeserializeObject(responseContent);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<MovieRatingVM> GetMyMovieRating(int movieId)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                var movieRating = await _context.MovieRatings
+                    .Include(e => e.Owner)
+                    .SingleOrDefaultAsync(e => e.MovieId == movieId && e.Owner == authSystemEntity);
+
+                var movieRatingVM = _mapper.Map<MovieRatingVM>(movieRating);
+
+                return movieRatingVM;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task<MovieRatingVM> RateMovie(int movieId, RateMovieCommand command)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                if (command.Rating.HasValue && (command.Rating < 1 || command.Rating > 10)) {
+                    throw new BusinessException($"Rating must be between 1 and 10");
+                }
+
+                // Check if movie exists
+                var movie = await GetMovieDetails(movieId);
+
+                var movieRating = await _context.MovieRatings
+                    .Include((mr) => mr.Owner)
+                    .SingleOrDefaultAsync((mr) => mr.MovieId == movieId && mr.Owner == authSystemEntity);
+
+                if (movieRating != null)
+                {
+                    movieRating.Rating = command.Rating;
+
+                    _context.MovieRatings.Update(movieRating);
+                }
+                else
+                {
+                    movieRating = new MovieRating
+                    {
+                        MovieId = movieId,
+                        Rating = command.Rating,
+                        Owner = authSystemEntity,
+                    };
+
+                    _context.MovieRatings.Add(movieRating);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return _mapper.Map<MovieRatingVM>(movieRating);
             }
             catch (Exception e)
             {

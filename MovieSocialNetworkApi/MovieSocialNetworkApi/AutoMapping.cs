@@ -31,6 +31,7 @@ namespace MovieSocialNetworkApi
             CreateMap<ChatRoomVM, ChatRoom>().ReverseMap();
             CreateMap<ChatRoomMembershipVM, ChatRoomMembership>().ReverseMap();
             CreateMap<NotificationVM, Notification>().ReverseMap();
+            CreateMap<MovieRatingVM, MovieRating>().ReverseMap();
         }
     }
 }

@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MovieSocialNetworkApi.Exceptions;
+using MovieSocialNetworkApi.Models;
 using MovieSocialNetworkApi.Services;
 using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class TmdbController : Controller
@@ -17,6 +21,7 @@ namespace MovieSocialNetworkApi.Controllers
             _movieService = movieService;
         }
 
+        [AllowAnonymous]
         [HttpGet("configuration")]
         public async Task<object> GetConfiguration()
         {
@@ -75,6 +80,49 @@ namespace MovieSocialNetworkApi.Controllers
         public async Task<object> GetMovieVideos(int id)
         {
             return await _movieService.GetMovieVideos(id);
+        }
+
+        [HttpGet("movie/{id}/rating/me")]
+        public async Task<object> GetMyMovieRating(int id)
+        {
+            try
+            {
+                var result = await _movieService.GetMyMovieRating(id);
+
+                if (result != null)
+                {
+                    return Ok(result);
+                } else
+                {
+                    return NotFound();
+                }
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
+        }
+
+        [HttpPost("movie/{id}/rating")]
+        public async Task<IActionResult> RateMovie(int id, [FromBody] RateMovieCommand command)
+        {
+            try
+            {
+                var result = await _movieService.RateMovie(id, command);
+                return NoContent();
+            }
+            catch (BusinessException e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+            catch (ForbiddenException)
+            {
+                return Forbid();
+            }
         }
     }
 }

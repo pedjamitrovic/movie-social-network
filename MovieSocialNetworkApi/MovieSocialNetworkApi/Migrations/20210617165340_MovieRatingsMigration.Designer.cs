@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieSocialNetworkApi.Database;
 
 namespace MovieSocialNetworkApi.Migrations
 {
     [DbContext(typeof(MovieSocialNetworkDbContext))]
-    partial class MovieSocialNetworkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210617165340_MovieRatingsMigration")]
+    partial class MovieRatingsMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,9 +160,6 @@ namespace MovieSocialNetworkApi.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("OwnerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Rating")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

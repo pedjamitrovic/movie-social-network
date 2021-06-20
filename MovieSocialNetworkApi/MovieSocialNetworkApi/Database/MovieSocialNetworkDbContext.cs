@@ -27,6 +27,9 @@ namespace MovieSocialNetworkApi.Database
             modelBuilder.Entity<Post>();
             modelBuilder.Entity<Comment>();
 
+            modelBuilder.Entity<MovieRating>()
+                .HasKey(e => new { e.MovieId, e.OwnerId });
+
             modelBuilder.Entity<Relation>()
                 .HasKey(e => new { e.FollowingId, e.FollowerId });
 

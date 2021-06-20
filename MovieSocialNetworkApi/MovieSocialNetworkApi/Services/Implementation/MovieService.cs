@@ -338,20 +338,30 @@ namespace MovieSocialNetworkApi.Services
 
                 if (movieRating != null)
                 {
-                    movieRating.Rating = command.Rating;
+                    if (command.Rating.HasValue)
+                    {
+                        movieRating.Rating = command.Rating.Value;
 
-                    _context.MovieRatings.Update(movieRating);
+                        _context.MovieRatings.Update(movieRating);
+                    } 
+                    else
+                    {
+                        _context.MovieRatings.Remove(movieRating);
+                    }
                 }
                 else
                 {
-                    movieRating = new MovieRating
+                    if (command.Rating.HasValue)
                     {
-                        MovieId = movieId,
-                        Rating = command.Rating,
-                        Owner = authSystemEntity,
-                    };
+                        movieRating = new MovieRating
+                        {
+                            MovieId = movieId,
+                            Rating = command.Rating.Value,
+                            Owner = authSystemEntity,
+                        };
 
-                    _context.MovieRatings.Add(movieRating);
+                        _context.MovieRatings.Add(movieRating);
+                    }
                 }
 
                 await _context.SaveChangesAsync();

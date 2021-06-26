@@ -21,13 +21,20 @@ namespace MovieSocialNetworkApi.Database
         public DbSet<Message> Messages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<MovieRating> MovieRatings { get; set; }
-
+        public DbSet<Recommendation> Recommendations { get; set; }
+        public DbSet<TempRecommendation> TempRecommendations { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Post>();
             modelBuilder.Entity<Comment>();
 
             modelBuilder.Entity<MovieRating>()
+                .HasKey(e => new { e.MovieId, e.OwnerId });
+
+            modelBuilder.Entity<Recommendation>()
+                .HasKey(e => new { e.MovieId, e.OwnerId });
+
+            modelBuilder.Entity<TempRecommendation>()
                 .HasKey(e => new { e.MovieId, e.OwnerId });
 
             modelBuilder.Entity<Relation>()

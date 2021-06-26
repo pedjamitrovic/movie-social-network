@@ -10,7 +10,7 @@ namespace MovieSocialNetworkApi.Services
         Task<object> GetMovieDetails(int id);
         Task<object> SearchMovies(string query);
         Task<object> GetTrendingMovies(string timeWindow);
-        Task<object> GetPopularMovies();
+        Task<object> GetPopularMovies(Paging paging);
         Task<object> GetMovieKeywords(int id);
         Task<object> GetMovieRecommendations(int id);
         Task<object> GetMovieCredits(int id);
@@ -18,5 +18,9 @@ namespace MovieSocialNetworkApi.Services
         Task<object> GetMovieVideos(int id);
         Task<MovieRatingVM> GetMyMovieRating(int movieId);
         Task<MovieRatingVM> RateMovie(int movieId, RateMovieCommand command);
+        Task CalculateRecommendations();
+        Task CalculateTempRecommendations();
+        Task ActivateTempRecommendations();
+        Task<object> GetRecommendations(Paging paging);
     }
 }

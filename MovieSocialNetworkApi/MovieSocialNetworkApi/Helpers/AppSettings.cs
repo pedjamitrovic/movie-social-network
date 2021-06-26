@@ -12,5 +12,6 @@ namespace MovieSocialNetworkApi.Helpers
         public string TmdbApiKey { get; set; }
         public string TmdbBaseUrl { get; set; }
         public int MinReportsCount { get; set; }
+        public int MinRatingsCount { get; set; }
     }
 }

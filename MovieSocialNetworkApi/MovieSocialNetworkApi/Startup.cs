@@ -15,6 +15,7 @@ using Microsoft.Extensions.FileProviders;
 using System.IO;
 using MovieSocialNetworkApi.Hubs;
 using System.Threading.Tasks;
+using Hangfire;
 
 namespace MovieSocialNetworkApi
 {
@@ -33,6 +34,8 @@ namespace MovieSocialNetworkApi
             services.AddControllers().AddNewtonsoftJson();
             services.AddHttpContextAccessor();
             services.AddSignalR();
+            services.AddHangfire(x => x.UseSqlServerStorage(Configuration.GetConnectionString("HangfireDb")));
+            services.AddHangfireServer();
 
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
@@ -80,7 +83,7 @@ namespace MovieSocialNetworkApi
                 x.MemoryBufferThreshold = int.MaxValue;
             });
 
-            services.AddDbContext<MovieSocialNetworkDbContext>(options => options.UseSqlServer("name=ConnectionStrings:MovieSocialNetworkDb"));
+            services.AddDbContext<MovieSocialNetworkDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("MovieSocialNetworkDb")));
 
             services.AddScoped<ISystemEntityService, SystemEntityService>();
             services.AddScoped<IUserService, UserService>();
@@ -102,7 +105,7 @@ namespace MovieSocialNetworkApi
             app.UseRouting();
 
             app.UseCors(x => x
-                .WithOrigins("http://localhost:4200")
+                .WithOrigins("http://localhost:4200", "https://localhost:44319")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()
@@ -118,7 +121,7 @@ namespace MovieSocialNetworkApi
 
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.UseHangfireDashboard("/hangfire");
             app.UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();

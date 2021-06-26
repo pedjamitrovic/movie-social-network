@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using EFCore.BulkExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,7 +8,6 @@ using MovieSocialNetworkApi.Entities;
 using MovieSocialNetworkApi.Exceptions;
 using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Models;
-using MovieSocialNetworkApi.Models.Response;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -141,7 +141,7 @@ namespace MovieSocialNetworkApi.Services
             }
         }
 
-        public async Task<object> GetPopularMovies()
+        public async Task<object> GetPopularMovies(Paging paging)
         {
             try
             {
@@ -153,7 +153,7 @@ namespace MovieSocialNetworkApi.Services
                     BaseAddress = new Uri(_appSettings.TmdbBaseUrl)
                 };
 
-                using var response = await httpClient.GetAsync(new Uri($"movie/popular?api_key={_appSettings.TmdbApiKey}", UriKind.Relative));
+                using var response = await httpClient.GetAsync(new Uri($"movie/popular?api_key={_appSettings.TmdbApiKey}&page={paging.PageNumber}", UriKind.Relative));
 
                 response.EnsureSuccessStatusCode();
                 var responseContent = await response.Content.ReadAsStringAsync();
@@ -325,7 +325,8 @@ namespace MovieSocialNetworkApi.Services
                 var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
                 if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
 
-                if (command.Rating.HasValue && (command.Rating < 1 || command.Rating > 10)) {
+                if (command.Rating.HasValue && (command.Rating < 1 || command.Rating > 10))
+                {
                     throw new BusinessException($"Rating must be between 1 and 10");
                 }
 
@@ -343,7 +344,7 @@ namespace MovieSocialNetworkApi.Services
                         movieRating.Rating = command.Rating.Value;
 
                         _context.MovieRatings.Update(movieRating);
-                    } 
+                    }
                     else
                     {
                         _context.MovieRatings.Remove(movieRating);
@@ -367,6 +368,129 @@ namespace MovieSocialNetworkApi.Services
                 await _context.SaveChangesAsync();
 
                 return _mapper.Map<MovieRatingVM>(movieRating);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task CalculateTempRecommendations()
+        {
+            using var transaction = _context.Database.BeginTransaction();
+
+            try
+            {
+                var sysEntities = await _context.SystemEntities
+                    .Include(e => e.MovieRatings)
+                    .Where(e => e.MovieRatings.Count >= _appSettings.MinRatingsCount)
+                    .ToListAsync();
+
+                var movieIds = await _context.MovieRatings
+                    .GroupBy(e => e.MovieId)
+                    .Select(g => g.Key)
+                    .ToListAsync();
+
+                await _context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE TempRecommendations");
+
+                var tempRecommendations = new List<TempRecommendation>();
+
+                for (int i = 0; i < sysEntities.Count; i++)
+                {
+                    for (int j = 0; j < movieIds.Count; j++)
+                    {
+                        tempRecommendations.Add(new TempRecommendation { MovieId = movieIds[j], OwnerId = sysEntities[i].Id, Rating = 10 });
+                    }
+                    _logger.LogDebug($"Calculated recommendations for user {sysEntities[i].Id}");
+                }
+
+                await _context.BulkInsertAsync(tempRecommendations);
+
+                transaction.Commit();
+            }
+            catch (Exception e)
+            {
+                transaction.Rollback();
+
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task ActivateTempRecommendations()
+        {
+            using var transaction = _context.Database.BeginTransaction();
+
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE Recommendations");
+                await _context.Database.ExecuteSqlRawAsync("INSERT INTO Recommendations SELECT MovieId, OwnerId, Rating FROM TempRecommendations");
+
+                transaction.Commit();
+            }
+            catch (Exception e)
+            {
+                transaction.Rollback();
+
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task CalculateRecommendations()
+        {
+            await CalculateTempRecommendations();
+            await ActivateTempRecommendations();
+        }
+
+        public async Task<object> GetRecommendations(Paging paging)
+        {
+            try
+            {
+                var authSystemEntity = await _auth.GetAuthenticatedSystemEntity();
+                if (authSystemEntity == null) throw new BusinessException($"Authenticated system entity not found");
+
+                await _context.Entry(authSystemEntity).Collection(e => e.MovieRatings).LoadAsync();
+
+                if (authSystemEntity.MovieRatings.Count < _appSettings.MinRatingsCount)
+                {
+                    return await GetPopularMovies(paging);
+                }
+
+                var recommendations = _context.Recommendations
+                    .Where(e => e.OwnerId == authSystemEntity.Id)
+                    .OrderByDescending(e => e.Rating)
+                    .AsQueryable();
+
+                var totalResults = await recommendations.CountAsync();
+
+                var pagedRecommendations = await recommendations.Skip((paging.PageNumber - 1) * paging.PageSize).Take(paging.PageSize).ToListAsync();
+
+                var results = new List<object>();
+
+                foreach (var recommendation in pagedRecommendations)
+                {
+                    try
+                    {
+                        var movie = await GetMovieDetails(recommendation.MovieId);
+                        results.Add(movie);
+                    }
+                    catch
+                    {
+                        // We ignore exceptions
+                    }
+                }
+
+                var response = new Dictionary<string, object>
+                {
+                    ["page"] = paging.PageNumber,
+                    ["total_results"] = totalResults,
+                    ["total_pages"] = totalResults / paging.PageSize + 1,
+                    ["results"] = results
+                };
+
+                return response;
             }
             catch (Exception e)
             {

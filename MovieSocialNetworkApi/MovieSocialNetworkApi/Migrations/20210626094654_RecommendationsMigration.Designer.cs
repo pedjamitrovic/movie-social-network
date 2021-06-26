@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieSocialNetworkApi.Database;
 
 namespace MovieSocialNetworkApi.Migrations
 {
     [DbContext(typeof(MovieSocialNetworkDbContext))]
-    partial class MovieSocialNetworkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210626094654_RecommendationsMigration")]
+    partial class RecommendationsMigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -325,24 +327,6 @@ namespace MovieSocialNetworkApi.Migrations
                     b.HasDiscriminator<string>("Discriminator").HasValue("SystemEntity");
                 });
 
-            modelBuilder.Entity("MovieSocialNetworkApi.Entities.TempRecommendation", b =>
-                {
-                    b.Property<int>("MovieId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.HasKey("MovieId", "OwnerId");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("TempRecommendations");
-                });
-
             modelBuilder.Entity("MovieSocialNetworkApi.Entities.Comment", b =>
                 {
                     b.HasBaseType("MovieSocialNetworkApi.Entities.Content");
@@ -578,17 +562,6 @@ namespace MovieSocialNetworkApi.Migrations
                     b.Navigation("ReportedSystemEntity");
 
                     b.Navigation("Reporter");
-                });
-
-            modelBuilder.Entity("MovieSocialNetworkApi.Entities.TempRecommendation", b =>
-                {
-                    b.HasOne("MovieSocialNetworkApi.Entities.SystemEntity", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("MovieSocialNetworkApi.Entities.Comment", b =>

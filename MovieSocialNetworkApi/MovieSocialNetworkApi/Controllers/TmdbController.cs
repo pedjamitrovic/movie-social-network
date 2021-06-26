@@ -47,9 +47,9 @@ namespace MovieSocialNetworkApi.Controllers
         }
 
         [HttpGet("movie/popular")]
-        public async Task<object> GetPopularMovies()
+        public async Task<object> GetPopularMovies([FromQuery] Paging paging)
         {
-            return await _movieService.GetPopularMovies();
+            return await _movieService.GetPopularMovies(paging);
         }
 
         [HttpGet("movie/{id}/keywords")]

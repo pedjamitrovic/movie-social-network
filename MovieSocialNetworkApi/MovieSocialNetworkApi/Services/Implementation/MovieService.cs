@@ -24,13 +24,15 @@ namespace MovieSocialNetworkApi.Services
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
         private readonly AppSettings _appSettings;
+        private readonly IRecommendationService _recommendationService;
 
         public MovieService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<MovieService> logger,
             IAuthService auth,
-            IOptions<AppSettings> appSettings
+            IOptions<AppSettings> appSettings,
+            IRecommendationService recommendationService
         )
         {
             _context = context;
@@ -38,6 +40,7 @@ namespace MovieSocialNetworkApi.Services
             _logger = logger;
             _auth = auth;
             _appSettings = appSettings.Value;
+            _recommendationService = recommendationService;
         }
 
         public async Task<object> GetConfiguration()
@@ -389,7 +392,9 @@ namespace MovieSocialNetworkApi.Services
 
                 var movieIds = await _context.MovieRatings
                     .GroupBy(e => e.MovieId)
-                    .Select(g => g.Key)
+                    .Select(g => new { MovieId = g.Key, Count = g.Count() })
+                    .Where(e => e.Count >= _appSettings.MinRatingsCount)
+                    .Select(e => e.MovieId)
                     .ToListAsync();
 
                 await _context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE TempRecommendations");
@@ -398,11 +403,18 @@ namespace MovieSocialNetworkApi.Services
 
                 for (int i = 0; i < sysEntities.Count; i++)
                 {
+                    Console.WriteLine($"Predicting ratings for user with id {sysEntities[i].Id}");
                     for (int j = 0; j < movieIds.Count; j++)
                     {
-                        tempRecommendations.Add(new TempRecommendation { MovieId = movieIds[j], OwnerId = sysEntities[i].Id, Rating = 10 });
+                        tempRecommendations.Add(
+                            new TempRecommendation
+                            {
+                                MovieId = movieIds[j],
+                                OwnerId = sysEntities[i].Id,
+                                Rating = (int)Math.Round(_recommendationService.Predict(sysEntities[i].Id, movieIds[j]).Score)
+                            }
+                        );
                     }
-                    _logger.LogDebug($"Calculated recommendations for user {sysEntities[i].Id}");
                 }
 
                 await _context.BulkInsertAsync(tempRecommendations);
@@ -458,10 +470,16 @@ namespace MovieSocialNetworkApi.Services
                     return await GetPopularMovies(paging);
                 }
 
-                var recommendations = _context.Recommendations
-                    .Where(e => e.OwnerId == authSystemEntity.Id)
-                    .OrderByDescending(e => e.Rating)
-                    .AsQueryable();
+                var recommendations = from r in _context.Recommendations
+                                      where r.OwnerId == authSystemEntity.Id
+                                      join mr in _context.MovieRatings on
+                                      new { r.MovieId, r.OwnerId } equals new { mr.MovieId, mr.OwnerId }
+                                      into rmrs
+                                      from rmr in rmrs.DefaultIfEmpty()
+                                      where rmr == null
+                                      select r;
+
+                recommendations = recommendations.OrderByDescending(e => e.Rating).AsQueryable();
 
                 var totalResults = await recommendations.CountAsync();
 

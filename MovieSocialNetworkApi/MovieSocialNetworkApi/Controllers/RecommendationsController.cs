@@ -14,12 +14,15 @@ namespace MovieSocialNetworkApi.Controllers
     public class RecommendationsController : Controller
     {
         private readonly IMovieService _movieService;
+        private readonly IRecommendationService _recommendationService;
 
         public RecommendationsController(
-            IMovieService movieService
+            IMovieService movieService,
+            IRecommendationService recommendationService
         )
         {
             _movieService = movieService;
+            _recommendationService = recommendationService;
         }
 
         [HttpGet]
@@ -34,6 +37,14 @@ namespace MovieSocialNetworkApi.Controllers
         public IActionResult CalculateRecommendations()
         {
             BackgroundJob.Enqueue(() => _movieService.CalculateRecommendations());
+            return NoContent();
+        }
+
+        [Authorize(Roles = Role.Admin)]
+        [HttpPost("matrix-factorization")]
+        public IActionResult CreateMatrixFactorizationModel()
+        {
+            _recommendationService.CreateModel();
             return NoContent();
         }
     }

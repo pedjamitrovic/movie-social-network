@@ -96,6 +96,7 @@ namespace MovieSocialNetworkApi
             services.AddScoped<IChatRoomService, ChatRoomService>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IMovieService, MovieService>();
+            services.AddScoped<IRecommendationService, RecommendationService>();
 
             services.AddAutoMapper(typeof(Startup));
         }

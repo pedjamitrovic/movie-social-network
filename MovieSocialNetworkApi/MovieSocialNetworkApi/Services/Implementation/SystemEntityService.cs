@@ -126,7 +126,7 @@ namespace MovieSocialNetworkApi.Services
                 var sysEntity = await _context.SystemEntities.Include(e => e.ReportedReports).SingleOrDefaultAsync(e => e.Id == id);
                 if (sysEntity == null) throw new BusinessException($"System entity with {id} not found");
 
-                var existingReport = sysEntity.ReportedReports.SingleOrDefault((e) => e.ReporterId == authSystemEntity.Id && e.ReportedSystemEntityId == id && !e.Reviewed);
+                var existingReport = sysEntity.ReportedReports.Where((e) => e.ReporterId == authSystemEntity.Id && e.ReportedSystemEntityId == id && !e.Reviewed).FirstOrDefault();
 
                 if (existingReport != null)
                 {

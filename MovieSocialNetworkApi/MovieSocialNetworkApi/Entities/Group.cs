@@ -20,6 +20,7 @@ namespace MovieSocialNetworkApi.Entities
                 Discriminator = nameof(Group),
                 Extended = mapper.Map<GroupVM>(this),
                 ReportedStats = ReportedReports
+                .Where(e => !e.Reviewed)
                 .GroupBy(e => e.Reason)
                 .Select(g => new ReportedStats { Reason = g.Key, Count = g.Count() })
                 .OrderByDescending(rs => rs.Count)

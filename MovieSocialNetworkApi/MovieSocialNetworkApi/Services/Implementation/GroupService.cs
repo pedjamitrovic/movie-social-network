@@ -218,6 +218,7 @@ namespace MovieSocialNetworkApi.Services
                 {
                     authenticatedUser.IsBanned = true;
                     authenticatedUser.BannedUntil = activeBan.BannedUntil;
+                    authenticatedUser.BannedReason = activeBan.Reason;
                 }
 
                 return authenticatedUser;

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using EFCore.BulkExtensions;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -370,10 +371,72 @@ namespace MovieSocialNetworkApi.Services
 
                 await _context.SaveChangesAsync();
 
+                BackgroundJob.Enqueue(() => UpdateUserRecommendations(authSystemEntity.Id));
+
                 return _mapper.Map<MovieRatingVM>(movieRating);
             }
             catch (Exception e)
             {
+                _logger.LogError(e.ToString());
+                throw;
+            }
+        }
+
+        public async Task UpdateUserRecommendations(int userId)
+        {
+            using var transaction = _context.Database.BeginTransaction();
+
+            try
+            {
+                var sysEntity = await _context.SystemEntities.Where(e => e.Id == userId)
+                    .Include(e => e.MovieRatings)
+                    .Include(e => e.Recommendations)
+                    .SingleOrDefaultAsync();
+
+                if (sysEntity.MovieRatings.Count < _appSettings.MinRatingsCount) return;
+
+                var ratedMovieIds = sysEntity.MovieRatings.Select(mr => mr.MovieId);
+
+                var movieIds = await _context.MovieRatings
+                    .GroupBy(e => e.MovieId)
+                    .Select(g => new { MovieId = g.Key, Count = g.Count() })
+                    .Where(e => e.Count >= _appSettings.MinRatingsCount)
+                    .Select(e => e.MovieId)
+                    .ToListAsync();
+
+                var nonRatedMovieIds = movieIds.Where(id => !ratedMovieIds.Contains(id)).ToList();
+
+                // Recreate model
+                _recommendationService.CreateModel();
+
+                var recommendations = new List<Recommendation>();
+
+                Console.WriteLine($"START - Updating ratings for user with id {sysEntity.Id}");
+
+                for (int i = 0; i < nonRatedMovieIds.Count; i++)
+                {
+                    recommendations.Add(
+                        new Recommendation
+                        {
+                            MovieId = nonRatedMovieIds[i],
+                            OwnerId = sysEntity.Id,
+                            Rating = (int)Math.Round(_recommendationService.Predict(sysEntity.Id, nonRatedMovieIds[i]).Score)
+                        }
+                    );
+                }
+
+                await _context.BulkDeleteAsync(sysEntity.Recommendations.ToList());
+
+                await _context.BulkInsertOrUpdateAsync(recommendations);
+
+                transaction.Commit();
+
+                Console.WriteLine($"END - Updating ratings for user with id {sysEntity.Id}");
+            }
+            catch (Exception e)
+            {
+                transaction.Rollback();
+
                 _logger.LogError(e.ToString());
                 throw;
             }
@@ -385,6 +448,9 @@ namespace MovieSocialNetworkApi.Services
 
             try
             {
+                // Recreate model
+                _recommendationService.CreateModel();
+
                 var sysEntities = await _context.SystemEntities
                     .Include(e => e.MovieRatings)
                     .Where(e => e.MovieRatings.Count >= _appSettings.MinRatingsCount)
@@ -403,15 +469,17 @@ namespace MovieSocialNetworkApi.Services
 
                 for (int i = 0; i < sysEntities.Count; i++)
                 {
+                    var ratedMovieIds = sysEntities[i].MovieRatings.Select(mr => mr.MovieId);
+                    var nonRatedMovieIds = movieIds.Where(id => !ratedMovieIds.Contains(id)).ToList();
                     Console.WriteLine($"Predicting ratings for user with id {sysEntities[i].Id}");
-                    for (int j = 0; j < movieIds.Count; j++)
+                    for (int j = 0; j < nonRatedMovieIds.Count; j++)
                     {
                         tempRecommendations.Add(
                             new TempRecommendation
                             {
-                                MovieId = movieIds[j],
+                                MovieId = nonRatedMovieIds[j],
                                 OwnerId = sysEntities[i].Id,
-                                Rating = (int)Math.Round(_recommendationService.Predict(sysEntities[i].Id, movieIds[j]).Score)
+                                Rating = (int)Math.Round(_recommendationService.Predict(sysEntities[i].Id, nonRatedMovieIds[j]).Score)
                             }
                         );
                     }

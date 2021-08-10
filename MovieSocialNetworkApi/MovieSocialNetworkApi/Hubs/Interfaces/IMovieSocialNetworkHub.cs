@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Hubs
 {
-    public interface IChatHub
+    public interface IMovieSocialNetworkHub
     {
         // Client calls
         Task SendMessage(CreateMessageCommand command);

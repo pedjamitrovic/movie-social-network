@@ -21,14 +21,14 @@ namespace MovieSocialNetworkApi.Services
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IAuthService _auth;
-        private readonly IHubContext<ChatHub, IChatHub> _hubContext;
+        private readonly IHubContext<MovieSocialNetworkHub, IMovieSocialNetworkHub> _hubContext;
 
         public ChatRoomService(
             MovieSocialNetworkDbContext context,
             IMapper mapper,
             ILogger<ChatRoomService> logger,
             IAuthService auth,
-            IHubContext<ChatHub, IChatHub> hubContext
+            IHubContext<MovieSocialNetworkHub, IMovieSocialNetworkHub> hubContext
         )
         {
             _context = context;

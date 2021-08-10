@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace MovieSocialNetworkApi.Hubs
 {
-    public class ChatHub: Hub<IChatHub>
+    public class MovieSocialNetworkHub: Hub<IMovieSocialNetworkHub>
     {
         private readonly IChatRoomService _chatRoomService;
         private readonly INotificationService _notificationService;
 
-        public ChatHub(
+        public MovieSocialNetworkHub(
             IChatRoomService chatRoomService,
             INotificationService notificationService
         )

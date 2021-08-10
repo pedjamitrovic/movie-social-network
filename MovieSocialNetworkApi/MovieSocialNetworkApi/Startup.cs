@@ -126,7 +126,7 @@ namespace MovieSocialNetworkApi
             app.UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();
-                    endpoints.MapHub<ChatHub>("/chat");
+                    endpoints.MapHub<MovieSocialNetworkHub>("/msn-hub");
                 }
             );
         }

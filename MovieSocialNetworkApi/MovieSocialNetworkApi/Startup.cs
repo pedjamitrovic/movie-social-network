@@ -67,7 +67,7 @@ namespace MovieSocialNetworkApi
 
                         var path = context.HttpContext.Request.Path;
 
-                        if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/chat")))
+                        if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/msn-hub")))
                         {
                             context.Token = accessToken;
                         }

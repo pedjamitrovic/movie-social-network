@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
 using MovieSocialNetworkApi.Database;
+using MovieSocialNetworkApi.Helpers;
 using MovieSocialNetworkApi.Recommender;
 using System;
 using System.IO;
@@ -14,6 +16,7 @@ namespace MovieSocialNetworkApi.Services
     {
         private readonly ILogger _logger;
         private readonly MovieSocialNetworkDbContext _context;
+        private readonly AppSettings _appSettings;
 
         private MLContext _mlContext;
         private ITransformer _transformer;
@@ -21,10 +24,12 @@ namespace MovieSocialNetworkApi.Services
 
         public RecommendationService(
             ILogger<RecommendationService> logger,
+            IOptions<AppSettings> appSettings,
             MovieSocialNetworkDbContext context
         )
         {
             _logger = logger;
+            _appSettings = appSettings.Value;
             _context = context;
             _mlContext = new MLContext();
             LoadModel();
@@ -39,7 +44,17 @@ namespace MovieSocialNetworkApi.Services
         {
             try
             {
-                var movieRatings = _context.MovieRatings.Select(e => new MovieRating { OwnerId = e.OwnerId, MovieId = e.MovieId, Rating = e.Rating }).ToList();
+                var movieIds = _context.MovieRatings
+                    .GroupBy(e => e.MovieId)
+                    .Select(g => new { MovieId = g.Key, Count = g.Count()})
+                    .Where(e => e.Count >= _appSettings.MinRatingsCount)
+                    .Select(e => e.MovieId)
+                    .ToList();
+
+                var movieRatings = _context.MovieRatings
+                    .Where(e => movieIds.Contains(e.MovieId))
+                    .Select(e => new MovieRating { OwnerId = e.OwnerId, MovieId = e.MovieId, Rating = e.Rating })
+                    .ToList();
 
                 var data = _mlContext.Data.LoadFromEnumerable(movieRatings);
 
@@ -50,8 +65,13 @@ namespace MovieSocialNetworkApi.Services
                     MatrixColumnIndexColumnName = "OwnerIdEncoded",
                     MatrixRowIndexColumnName = "MovieIdEncoded",
                     LabelColumnName = "Rating",
+                    Alpha = 10e-5,
+                    ApproximationRank = 8,
+                    C = 10e-7,
+                    Lambda = 10e-2,
+                    LearningRate = 10e-2,
                     NumberOfIterations = 12,
-                    Quiet = true
+                    Quiet = false
                 };
 
                 _transformer = BuildAndTrainModel(trainTestData.TrainSet, options);

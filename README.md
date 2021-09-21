@@ -1,6 +1,6 @@
 # movie-social-network
  
-Repository movie-social-network represents WEB API which encapsulates business logic of social network geared towards cinematography fans.
+WEB API which encapsulates business logic of social network geared towards cinematography fans.
 
 Check out [movie-social-network-ui](https://github.com/pedjamitrovic/movie-social-network-ui) repo which represents UI of movie-social-network API.
 
